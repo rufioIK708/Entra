@@ -6,21 +6,23 @@ import com.microsoft.graph.beta.*;
 import com.microsoft.graph.beta.models.*;
 import com.microsoft.graph.beta.serviceclient.*;
 import com.microsoft.graph.beta.identity.*;
-import com.microsoft.graph.core.*;
-import com.microsoft.graph.beta.users.item.authentication.fido2methods.creationoptionswithchallengetimeoutinminutes.CreationOptionsWithChallengeTimeoutInMinutesRequestBuilder;
+//import com.microsoft.graph.core.*;
+//import com.microsoft.graph.beta.users.item.authentication.fido2methods.creationoptionswithchallengetimeoutinminutes.CreationOptionsWithChallengeTimeoutInMinutesRequestBuilder;
 import com.microsoft.graph.beta.users.item.authentication.methods.item.resetpassword.*;
 import com.microsoft.graph.beta.models.odataerrors.*;
 //import java.sql.Date;
 import javax.swing.*;
+
+import org.checkerframework.checker.units.qual.C;
+
 import javax.smartcardio.*;
 
-//import org.checkerframework.checker.units.qual.g;
 
 import java.awt.*;
-import java.time.OffsetDateTime;
-import java.time.ZonedDateTime;
-import java.util.Date;
-import java.util.Locale;
+//import java.time.OffsetDateTime;
+//import java.time.ZonedDateTime;
+//import java.util.Date;
+//import java.util.Locale;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -64,8 +66,8 @@ public class App {
             "UserAuthenticationMethod.ReadWrite.All User.RevokeSessions.All Auditlog.Read.All Policy.Read.All " +
             "user.read GroupMember.Read.All"};
     final static String noActiveUser = "No active user. Please get a user first.";
-    final static JButton toggleButtonDisable = new JButton("Disable Account");
-    final static JButton toggleButtonEnable = new JButton("Enable Account");
+    //final static JButton toggleButtonDisable = new JButton("Disable Account");
+    //final static JButton toggleButtonEnable = new JButton("Enable Account");
     final static boolean shouldFill = true;
     final static boolean shouldWeightX = true;
     final static boolean RIGHT_TO_LEFT = false;
@@ -96,7 +98,6 @@ public class App {
         textArea.setEditable(false);
         textArea.setBackground(pane.getBackground()); // make background same as pane
         userInfoArea = textArea;
-
         c.fill = GridBagConstraints.HORIZONTAL;
         c.gridx = 0;
         c.gridy = 0;
@@ -239,6 +240,8 @@ public class App {
         textArea.setForeground(java.awt.Color.GREEN);
         textArea.setName("outputArea");
         JScrollPane textScrollPane = new JScrollPane(textArea);
+        textScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+
         c.fill = GridBagConstraints.BOTH;      
         //c.ipady = 40;      //make this component tall
         c.weightx = 1.0;
@@ -258,6 +261,7 @@ public class App {
 
     // Method to create the Sign In button and add it to the frame/
     public static void createSignInButton(JFrame frame) {
+        // Remove all components from the frame's content pane
         removeComponentsFromPane(frame.getContentPane());
 
         // Set layout manager
@@ -302,12 +306,18 @@ public class App {
     // This will reset the state of the app and remove the sign in button
     // and add the sign in button back to the frame.
     public static void signOut_click(JFrame frame) {
+
+        // Reset the state of the app
+        frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+
         isSignedIn = false;
         admin = null;
         activeUser = null;
         graphClient = null;
 
         createSignInButton(frame);
+
+        frame.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
     }
 
     // Click on Sign In button

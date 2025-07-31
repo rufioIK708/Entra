@@ -65,8 +65,17 @@ public class MFAExtras {
             // Get org info
             var response = App.graphClient.organization().get();
 
-            if (response.getValue().contains("AADPremium"))
-                successful = true;
+            var plans = response.getValue().getFirst().getAssignedPlans();
+
+            for (var plan : plans) {
+                // Check if the plan is AAD Premium
+                //App.outputArea.append("Checking plan: " + plan.getService() + "\n");
+                if (plan.getService().equalsIgnoreCase("AADPremiumService")
+                    && plan.getCapabilityStatus().equalsIgnoreCase("Enabled")) {
+                    successful = true;
+                    break;
+                }
+            }
         } 
         catch (Exception ex) {
                 JOptionPane.showMessageDialog(null, "Error getting Org info. Pleaes try again.\n" + ex.getMessage());
@@ -155,12 +164,53 @@ public class MFAExtras {
         return defaultMethod;
     }
 
+    // get the tenant registration report information
+    // this is dependent on the tenant being premium and my not work in all tenants
+    public static void getRegistrationAuthData () {
+        //initialize the string to hold the output
+        StringBuilder message = new StringBuilder();
+        UserRegistrationDetails response = null;
+        
+        if (!isTenantPremium()) {
+            App.outputArea.append("Tenant is not premium, cannot get registration data.\n");
+            App.outputArea.append("Please contact your admin to enable premium features.\n\n");
+        } else {
+            try {
+                //get the registration report
+                response = App.graphClient.reports().authenticationMethods().userRegistrationDetails()
+                    .byUserRegistrationDetailsId(App.activeUser.getId()).get();
+
+                //if we have a response, loop through it and print out the details
+                if (null != response.getId()) {
+                    message.append("\n*****************User Registration Data*****************\n");
+                    message.append("\nUser is an admin in Entra ID :   ").append(response.getIsAdmin());
+                    message.append("\nUser is MFA registered       :   ").append(response.getIsMfaRegistered());
+                    message.append("\nUser is MFA capable          :   ").append(response.getIsMfaCapable());
+                    message.append("\nUser is SSPR registered      :   ").append(response.getIsSsprRegistered());
+                    message.append("\nUser is SSPR enabled         :   ").append(response.getIsSsprEnabled());
+                    message.append("\nUser is SSPR capable         :   ").append(response.getIsSsprCapable());
+                    message.append("\nUser is passwordless capable :   ").append(response.getIsPasswordlessCapable());
+                }
+                else {
+                    message.append("No registration data found for user: ").append(App.activeUser.getDisplayName()).append("\n");
+                }
+            } catch (ODataError ex) {
+                JOptionPane.showMessageDialog(null, "Error getting registration auth methods:\n" + ex.getMessage(), null, 0);
+            }
+        }
+
+        //print the output to the output area
+        App.outputArea.append(message.toString());
+    }
     //get the MFA methods and print them out in a readable way
     // also identify the default method in the output
     //  possible defaults are only SMS, MSAuth, oath, voice mobile, voice office,
     //      and voice alt mobile 
     public static void getAndPrintUserMFA() {
         {
+            // Get and print the tenant registration data, if available.
+            getRegistrationAuthData();
+
             // Get the user preferred default method
             String defaultMethod = getDefaultMethod();
 
@@ -172,14 +222,14 @@ public class MFAExtras {
                         .methods()
                         .get();
                 // Create string to hold the output
-                StringBuilder message = new StringBuilder("Authentication Methods for " + App.activeUser.getDisplayName() + ":\n\n");
+                StringBuilder message = new StringBuilder("\nAuthentication Methods for " + App.activeUser.getDisplayName() + ":\n");
                 message.append("Default method: ").append(defaultMethod).append("\n");
                 // Loop through the authentication methods and print out details depending on the type
                 for (AuthenticationMethod method : methodsResponse.getValue()) {
                     switch (method)
                     {
                         case PlatformCredentialAuthenticationMethod platformMethod:
-                            message.append("Platform Credential:\n");
+                            message.append("\nPlatform Credential:\n");
                             message.append("  ID               : ").append(platformMethod.getId()).append("\n");
                             message.append("  Display Name     : ").append(platformMethod.getDisplayName()).append("\n");
                             message.append("  Created DateTime : ").append(platformMethod.getCreatedDateTime()).append("\n");
@@ -192,7 +242,7 @@ public class MFAExtras {
                             message.append("  Created DateTime : ").append(whfbMethod.getCreatedDateTime()).append("\n");
                             break;
                         case TemporaryAccessPassAuthenticationMethod tapMethod:
-                            message.append("Temporary Access Pass:\n");
+                            message.append("\nTemporary Access Pass:\n");
                             message.append("  ID               : ").append(tapMethod.getId()).append("\n");
                             message.append("  Is Usable Once   : ").append(tapMethod.getIsUsableOnce()).append("\n");
                             message.append("  Start DateTime   : ").append(tapMethod.getStartDateTime()).append("\n");
@@ -200,7 +250,7 @@ public class MFAExtras {
                             message.append("  Created DateTime : ").append(tapMethod.getCreatedDateTime()).append("\n");
                             break;
                         case SoftwareOathAuthenticationMethod oathMethod:
-                            message.append("Software OATH: ");
+                            message.append("\nSoftware OATH: ");
                             if ( defaultOath == defaultMethod)
                                 message.append(" **Usable as Default Method**\n");
                             else
@@ -211,7 +261,7 @@ public class MFAExtras {
                             message.append("  Created DateTime: ").append(oathMethod.getCreatedDateTime()).append("\n");
                             break;
                         case MicrosoftAuthenticatorAuthenticationMethod authMethod:
-                            message.append("Microsoft Authenticator: ");
+                            message.append("\nMicrosoft Authenticator: ");
                             if ( defaultPush == defaultMethod)
                                 message.append(" **Default Method**\n");
                             else
@@ -223,7 +273,7 @@ public class MFAExtras {
                             message.append("  Created DateTime  : ").append(authMethod.getCreatedDateTime()).append("\n");
                             break;
                         case PhoneAuthenticationMethod phoneMethod:
-                            message.append("Phone Authentication: ");
+                            message.append("\nPhone Authentication: ");
                             if (defaultSms == defaultMethod && phoneTypeMobile == phoneMethod.getPhoneType())
                                 message.append(" **Default Method**\n");
                             else if (defaultVoiceMobile == defaultMethod && phoneTypeMobile == phoneMethod.getPhoneType()) 
@@ -243,18 +293,18 @@ public class MFAExtras {
                             message.append("  Created DateTime  : ").append(phoneMethod.getCreatedDateTime()).append("\n");
                             break;
                         case PasswordAuthenticationMethod passwordMethod:
-                            message.append("Password Method :\n");
+                            message.append("\nPassword Method :\n");
                             message.append("  Id               : ").append(passwordMethod.getId()).append("\n");
                             message.append("  Created DateTime : ").append("\n");
                             break;
                         case EmailAuthenticationMethod emailMethod:
-                            message.append("Email Method   :\n");
+                            message.append("\nEmail Method   :\n");
                             message.append("  Id               : ").append(emailMethod.getId()).append("\n");
                             message.append("  Email Address    : ").append(emailMethod.getEmailAddress()).append("\n");
                             message.append("  Created DateTime : ").append(emailMethod.getCreatedDateTime()).append("\n");
                             break;
                         case HardwareOathAuthenticationMethod hardOathMethod:
-                            message.append("Hardware OATH: ");
+                            message.append("\nHardware OATH: ");
                             if ( defaultPush == defaultMethod)
                                 message.append(" **Useable as Default Method**\n");
                             else
@@ -267,8 +317,9 @@ public class MFAExtras {
                             message.append("  AdditionalData   : ").append(hardOathMethod.getAdditionalData()).append("\n");
                             message.append("  Created DateTime : ").append(hardOathMethod.getCreatedDateTime()).append("\n");
                             break;
+                        // this list is all inclusive, so we should not get here
                         default:
-                            message.append("Other Method Type : ").append(method.getOdataType());
+                            message.append("\nOther Method Type : ").append(method.getOdataType());
                             message.append("  ID              : ").append(method.getId()).append("\n");
                             message.append("  Created DateTime: ").append(method.getCreatedDateTime()).append("\n");
                             break;
