@@ -16,7 +16,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
+//import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.List;
@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.ArrayList;
 
 import com.microsoft.graph.beta.models.*;
+//import com.microsoft.graph.beta.models.ExternalAuthenticationType;
 //import com.microsoft.graph.beta.models.odataerrors.*;
 import com.microsoft.graph.beta.models.odataerrors.ODataError;
 
@@ -46,6 +47,9 @@ public class MFAExtras {
     final static String defaultVoiceMobile = "voiceMobile";
     final static String defaultVoiceOffice = "voiceOffice";
     final static String defaultVoiceAltMobile = "voiceAlternateMobile";
+
+    //authentication method ID for password
+    final static String passwordId = "28c10230-6103-485e-b985-444c60001490";
 
     //object used to hold the data for the TAP creation window
     public static class tapData {       
@@ -317,6 +321,16 @@ public class MFAExtras {
                             message.append("  AdditionalData   : ").append(hardOathMethod.getAdditionalData()).append("\n");
                             message.append("  Created DateTime : ").append(hardOathMethod.getCreatedDateTime()).append("\n");
                             break;
+                        case Fido2AuthenticationMethod fido2AuthMethod:
+                            message.append("\nFIDO2 Method: \n");
+                            message.append("  ID               : ").append(fido2AuthMethod.getId()).append("\n");
+                            message.append("  Display Name     : ").append(fido2AuthMethod.getDisplayName()).append("\n");
+                            message.append("  Created DateTime : ").append(fido2AuthMethod.getCreatedDateTime()).append("\n");
+                            break;
+                        
+                        case QrCodePinAuthenticationMethod qrCodePinMethod:
+                            message.append("\nQR Code PIN Method: \n");
+                            break;
                         // this list is all inclusive, so we should not get here
                         default:
                             message.append("\nOther Method Type : ").append(method.getOdataType());
@@ -431,6 +445,36 @@ public class MFAExtras {
                             JOptionPane.showMessageDialog(null, error + id, errorTitle, 0);
                         }
                         break;
+                    case Fido2AuthenticationMethod fido2AuthMethod:
+                        try {
+                            App.graphClient.users().byUserId(App.activeUser.getId()).authentication()
+                                .fido2Methods().byFido2AuthenticationMethodId(id).delete();
+                            successful = true;
+                        }
+                        catch (ODataError ex) {
+                            JOptionPane.showMessageDialog(null, error + id, errorTitle, 0);
+                        }
+                        break;
+                    case QrCodePinAuthenticationMethod qrCodePinMethod:
+                        try {
+                            App.graphClient.users().byUserId(App.activeUser.getId()).authentication()
+                                .qrCodePinMethod().delete();
+                            successful = true;
+                        }
+                        catch (ODataError ex) {
+                            JOptionPane.showMessageDialog(null, error + id, errorTitle, 0);
+                        }
+                        break;
+                    /*case ExternalAuthenticationMethod externalAuthMethod:
+                        try {
+                            App.graphClient.users().byUserId(App.activeUser.getId()).authentication()
+                                .externalMethods().byExternalAuthenticationMethodId(id).delete();
+                            successful = true;
+                        }
+                        catch (ODataError ex) {
+                            JOptionPane.showMessageDialog(null, error + id, errorTitle, 0);
+                        }
+                        break;*/
                     default:
                         break;
                 }

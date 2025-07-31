@@ -451,19 +451,19 @@ public class App {
         else {
             //initialize and set the strings for the input & message box
             String message = "Reset the password for : " + App.activeUser.getDisplayName() + "\n";
-            message += "\n\nPlease enter the new password, or \"System\" to let Entra\n";
+            message += "\n\nPlease enter the new password, or \"System\" to let Entra     \n";
             message += "generate one for you.";
 
-            String passwordSystem = "The system generated password is : ";
+            String passwordSystem = "The Entra generated password is : ";
             String passwordReset = "Password reset successfully!";
-            String passwordCatch = "Error resetting password.\n";
+            String passwordCatch = "Error resetting password.";
 
             //get the input from the user
             String password = JOptionPane.showInputDialog(null,message);
             var requestBody = new ResetPasswordPostRequestBody();
 
-            //if the string is empty, quit
-            if (!password.isEmpty()) {
+            
+            if (null != password && !password.isEmpty()) {
                 //change the cursor, we might be a while
                 frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
                 //check the input, if they didn't enter "system"
@@ -473,15 +473,13 @@ public class App {
                     //JOptionPane.showMessageDialog(null, password.equalsIgnoreCase("system"));
                 }
                 try {
-                    //get the password auth method
-                    var passwordMethod = graphClient.users().byUserId(activeUser.getId()).authentication()
-                        .passwordMethods().get();
                     //send the request to reset the password
                     var result = graphClient.users().byUserId(activeUser.getId()).authentication().methods()
-                        .byAuthenticationMethodId(passwordMethod.getValue().get(0).getId()).resetPassword().post(requestBody);
+                        .byAuthenticationMethodId(MFAExtras.passwordId).resetPassword().post(requestBody);
                     //if Entra created the password, we need to display to the admin.
                     if (password.equalsIgnoreCase("system"))
-                        JOptionPane.showMessageDialog(frame, passwordSystem + result.getNewPassword());
+                        JOptionPane.showMessageDialog(frame, passwordReset + "\n" 
+                            + passwordSystem + result.getNewPassword());
                     else 
                         JOptionPane.showMessageDialog(frame, passwordReset);     
                 }
@@ -490,6 +488,10 @@ public class App {
                 }
                 //all done, set the cursor back
                 frame.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+            }
+            else {
+                //if the user entered nothing, we will not reset the password
+                //JOptionPane.showMessageDialog(null, "Password reset cancelled.");
             }
         }
     }
