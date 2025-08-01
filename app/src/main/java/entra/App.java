@@ -13,7 +13,7 @@ import com.microsoft.graph.beta.models.odataerrors.*;
 //import java.sql.Date;
 import javax.swing.*;
 
-import org.checkerframework.checker.units.qual.C;
+//import org.checkerframework.checker.units.qual.C;
 
 import javax.smartcardio.*;
 
@@ -89,6 +89,8 @@ public class App {
         c.fill = GridBagConstraints.HORIZONTAL;
         }
         
+        // starting row 1
+        // add the user info area
         textArea = new JTextArea();
         if(null != activeUser)
             textArea.setText("The selectect user is: " + activeUser.getDisplayName());
@@ -104,6 +106,7 @@ public class App {
         c.gridwidth = 2;
         pane.add(textArea, c);
 
+        // add the sign out button
         button = new JButton("Sign Out");
         c.fill = GridBagConstraints.HORIZONTAL;
         c.weightx = 0.5;
@@ -113,6 +116,8 @@ public class App {
         button.addActionListener(e -> signOut_click((JFrame) SwingUtilities.getWindowAncestor(pane)));
         pane.add(button, c);
 
+        // starting row 2
+        // add the get a user button
         button = new JButton("Get a User");
         if (shouldWeightX) {
         c.weightx = 0.5;
@@ -124,6 +129,7 @@ public class App {
         button.addActionListener(e -> getAUser_click((JFrame) SwingUtilities.getWindowAncestor(pane)));
         pane.add(button, c);
     
+        // add the get user security methods button
         button = new JButton("Get User Security Methods");
         c.fill = GridBagConstraints.HORIZONTAL;
         c.weightx = 0.5;
@@ -133,6 +139,7 @@ public class App {
         button.addActionListener(e -> getUserMFA_Click((JFrame) SwingUtilities.getWindowAncestor(pane)));
         pane.add(button, c);
     
+        // add the reset password button
         button = new JButton("Reset Password");
         c.fill = GridBagConstraints.HORIZONTAL;
         c.weightx = 0.5;
@@ -142,6 +149,7 @@ public class App {
         button.addActionListener(e -> resetPassword_Click((JFrame) SwingUtilities.getWindowAncestor(pane)));
         pane.add(button, c);
 
+        // add the update immutableId button
         button = new JButton("Update ImmutableId");
         c.fill = GridBagConstraints.HORIZONTAL;
         c.weightx = 0.5;
@@ -151,6 +159,8 @@ public class App {
         button.addActionListener(e -> updateImmutableId_Click((JFrame) SwingUtilities.getWindowAncestor(pane)));
         pane.add(button, c);
     
+        //starting row 3
+        // add the toggle account enabled button
         if (activeUser != null && activeUser.getAccountEnabled())
             toggleButton = "Disable Account";
         else if (activeUser != null && !activeUser.getAccountEnabled())
@@ -165,6 +175,7 @@ public class App {
         button.addActionListener(e -> toggleAccount_Click((JFrame) SwingUtilities.getWindowAncestor(pane)));
         pane.add(button, c);
 
+        // add the add a security method button
         button = new JButton("Add a Security Method");
         c.fill = GridBagConstraints.HORIZONTAL;
         c.weightx = 0.0;
@@ -174,6 +185,7 @@ public class App {
         button.addActionListener(e -> addMethod_Click());
         pane.add(button, c);
 
+        // add the reset/re-register MFA button
         button = new JButton("Reset/Re-register MFA");
         c.fill = GridBagConstraints.HORIZONTAL;
         c.weightx = 0.0;
@@ -183,6 +195,7 @@ public class App {
         button.addActionListener(e -> reregisterMFA_Click((JFrame) SwingUtilities.getWindowAncestor(pane)));
         pane.add(button, c);
 
+        // add the remove a security method button
         button = new JButton("Remove a Security Method");
         c.fill = GridBagConstraints.HORIZONTAL;
         c.weightx = 0.0;
@@ -192,6 +205,8 @@ public class App {
         button.addActionListener(e -> removeMethod_Click((JFrame) SwingUtilities.getWindowAncestor(pane)));
         pane.add(button, c);
 
+        // starting row 4
+        // add the register Fido2 Passkey button
         button = new JButton("Register Fido2 Passkey");
         c.fill = GridBagConstraints.HORIZONTAL;
         c.weightx = 0.0;
@@ -209,7 +224,7 @@ public class App {
         c.gridy = 3;
         button.addActionListener(e -> revokeSignInSessions_click((JFrame) SwingUtilities.getWindowAncestor(pane)));
         pane.add(button, c);
-
+        // add the create TAP method button
         button = new JButton("Add a TAP Method");
         c.fill = GridBagConstraints.HORIZONTAL;
         c.weightx = 0.0;
@@ -232,6 +247,9 @@ public class App {
         c.gridy = 3;       //third row
         pane.add(button, c);
         *************************************/
+
+        // starting row 5
+        // add the output area
         textArea = new JTextArea();
         textArea.setText("Output will be shown here...\n\n");
         textArea.setEditable(false);
@@ -335,19 +353,20 @@ public class App {
         try {
             me = graphClient.me().get();
             isSignedIn = true;
+            admin = me;
         } catch (ODataError ex) {
             System.out.println("Error getting user: " + ex.getMessage());
         }
 
         if (isSignedIn)
         {
-            admin = me;
-            //disapper the sign in button
-            //signInButton.setVisible(false);
-            frame.getContentPane().removeAll();
+            frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+            
+            //clear the frame
+            removeComponentsFromPane(frame.getContentPane());
+            
             frame.setSize(1000, 500);
-            frame.getContentPane().revalidate();
-            //frame.setVisible(false);
+            
             
             addComponentsToPane(frame.getContentPane());   
 
@@ -360,6 +379,8 @@ public class App {
                     "Password Policies       : " + admin.getPasswordPolicies() + "\n" + "\n";
 
             outputArea.append(outputString);
+
+            frame.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
         }
         else
         {
