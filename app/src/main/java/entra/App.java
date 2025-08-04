@@ -394,7 +394,10 @@ public class App {
     // This will prompt the user for a User Principal Name (UPN) and get the user details
     // and display them in the output area.
     public static void getAUser_click(JFrame frame) {
-        String userPrincipalName = JOptionPane.showInputDialog(frame, "Enter the User Principal Name (UPN) of the user:");
+        String message = "Enter the User Principal Name (UPN) of the user:";
+        String title = "Get User";
+
+        String userPrincipalName = JOptionPane.showInputDialog(frame, message, title, JOptionPane.QUESTION_MESSAGE).trim();
 
         if (userPrincipalName != null && !userPrincipalName.isEmpty()) {
             frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
@@ -471,16 +474,17 @@ public class App {
         //it's not, so we can continue
         else {
             //initialize and set the strings for the input & message box
-            String message = "Reset the password for : " + App.activeUser.getDisplayName() + "\n";
+            String message = "Reset the password for : " + activeUser.getDisplayName() + "\n";
             message += "\n\nPlease enter the new password, or \"System\" to let Entra     \n";
             message += "generate one for you.";
+            String title = "Reset Password";
 
             String passwordSystem = "The Entra generated password is : ";
             String passwordReset = "Password reset successfully!";
             String passwordCatch = "Error resetting password.";
 
             //get the input from the user
-            String password = JOptionPane.showInputDialog(null,message);
+            String password = JOptionPane.showInputDialog(null,message,title,JOptionPane.QUESTION_MESSAGE).trim();
             var requestBody = new ResetPasswordPostRequestBody();
 
             
@@ -527,12 +531,14 @@ public class App {
         else {
             String message = "The current ImmutableID for " + activeUser.getDisplayName() + " is: " + activeUser.getOnPremisesImmutableId();
             message += "\nPlease enter the new ImmutableId below or \"Clear\" to clear it.";
+            String title = "Update ImmutableId";
+
             //get the update from the admin
-            String immutableId = JOptionPane.showInputDialog(frame, message, "Update ImmutableId", 0);
+            String immutableId = JOptionPane.showInputDialog(frame, message, title, 0).trim();
 
             frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
-            if (!immutableId.isEmpty()) {
+            if (null != immutableId && !immutableId.isEmpty()) {
                 //update the immutableId on the stored user
                 if (immutableId.equalsIgnoreCase("clear"))
                     activeUser.setOnPremisesImmutableId(null);
@@ -598,7 +604,6 @@ public class App {
                 button.setText("Disable Account");
             else if (null != activeUser && !activeUser.getAccountEnabled()) 
                 button.setText("Enable Account");
-            
         }
     }
 
@@ -630,18 +635,153 @@ public class App {
             List<AuthenticationMethod> cantdelete = new ArrayList<>();
             String defaultMethod = MFAExtras.getDefaultMethod();
             
-            methods = MFAExtras.getUserMfaMethods();
+            if (null == defaultMethod || defaultMethod.isEmpty()) {
+                // we  cannot identify the default method, so we will loop through all methods
+                // and delete them all. need to loop through the methods 3 times maximum
+                methods = MFAExtras.getUserMfaMethods();
             
-            for (int i = 0; i < 3; i++) {
+                for (int i = 0; i < 3; i++) {
+                    for (AuthenticationMethod method : methods) {
+                        if (method instanceof PasswordAuthenticationMethod || method instanceof EmailAuthenticationMethod) {
+                            continue; // skip password and email methods
+                        } else {
+                            try {
+                                MFAExtras.deleteMethod(method.getId());
+                            } catch (ODataError ex) {
+                                // if the method cannot be deleted, add it to the list
+                                //cantdelete.add(method);
+                            }
+                        }
+                    }
+                }
+            } else if ( defaultMethod.contains("voice") || defaultMethod.equalsIgnoreCase("sms")) {
+                // we cannot delete the default method, so we will loop through all methods
+                // and delete them all except for phone methods
+                methods = MFAExtras.getUserMfaMethods();
+            
                 for (AuthenticationMethod method : methods) {
-                    if (method instanceof PasswordAuthenticationMethod || method instanceof EmailAuthenticationMethod) {
+                    if (method instanceof PasswordAuthenticationMethod || 
+                        method instanceof EmailAuthenticationMethod ||
+                        method instanceof WindowsHelloForBusinessAuthenticationMethod ||
+                        method instanceof TemporaryAccessPassAuthenticationMethod) {
                         continue; // skip password and email methods
+                    // the default method is a phone method, but we need to figure out which one
+                    // and act accordingly
+                    } else if (method instanceof PhoneAuthenticationMethod) {
+                        PhoneAuthenticationMethod phoneMethod = (PhoneAuthenticationMethod) method;
+
+                        // if the default method is SMS or voiceMobile, we will delete all phone methods that are not mobile
+                        if ((defaultMethod.equalsIgnoreCase("sms")  || defaultMethod.equalsIgnoreCase(MFAExtras.defaultVoiceMobile))
+                            && !phoneMethod.getPhoneType().toString().equalsIgnoreCase(MFAExtras.phoneMobile)){
+                            MFAExtras.deleteMethod(method.getId());
+                        // if the default method is SMS or v1oiceMobile, we will store the mobile phone method    
+                        } else if ((defaultMethod.equalsIgnoreCase("sms")  || defaultMethod.equalsIgnoreCase(MFAExtras.defaultVoiceMobile))
+                            && phoneMethod.getPhoneType().toString().equalsIgnoreCase(MFAExtras.phoneMobile)) {
+                            cantdelete.add(phoneMethod);
+                        //if the default method is voiceAlternateMobile, we need to store the mobile and alternateMobile methods
+                        } else if (defaultMethod.equalsIgnoreCase(MFAExtras.defaultVoiceAltMobile)
+                            && (phoneMethod.getPhoneType().toString().equalsIgnoreCase(MFAExtras.phoneMobile)
+                            || phoneMethod.getPhoneType().toString().equalsIgnoreCase(MFAExtras.phoneAltMobile))) {
+                            cantdelete.add(phoneMethod);
+                        // if the default method is voiceAlternateMobile, we will delete all phone methods that are not alternate or mobile
+                        } else if (defaultMethod.equalsIgnoreCase(MFAExtras.defaultVoiceAltMobile)
+                            && !phoneMethod.getPhoneType().toString().equalsIgnoreCase(MFAExtras.phoneMobile)
+                            && !phoneMethod.getPhoneType().toString().equalsIgnoreCase(MFAExtras.phoneAltMobile)) {
+                            MFAExtras.deleteMethod(method.getId());
+                        // if the default method is voiceOffice, we will delete all phone methods that are not office
+                        } else if (defaultMethod.equalsIgnoreCase(MFAExtras.defaultVoiceOffice)
+                            && !phoneMethod.getPhoneType().toString().equalsIgnoreCase(MFAExtras.phoneOffice)) {
+                            MFAExtras.deleteMethod(method.getId());
+                        // if the default method is voiceOffice, we will store the office phone method
+                        } else if (defaultMethod.equalsIgnoreCase(MFAExtras.defaultVoiceOffice)
+                            && phoneMethod.getPhoneType().toString().equalsIgnoreCase(MFAExtras.phoneOffice)) {
+                            cantdelete.add(phoneMethod);
+                        }
+                    // for all other methods, just delete them        
                     } else {
                         try {
                             MFAExtras.deleteMethod(method.getId());
                         } catch (ODataError ex) {
                             // if the method cannot be deleted, add it to the list
                             //cantdelete.add(method);
+                        }
+                    }
+                }
+                // loop through the methods that cannot be deleted and delete them
+                for ( AuthenticationMethod method : cantdelete) {
+                    MFAExtras.deleteMethod(method.getId());
+                }
+                
+            } else if (defaultMethod.equalsIgnoreCase("push")) { 
+                // we cannot delete the default method, so we will loop through all methods
+                // and delete them all except for Microsoft Authenticator methods
+                methods = MFAExtras.getUserMfaMethods();
+            
+                for (AuthenticationMethod method : methods) {
+                    if (method instanceof PasswordAuthenticationMethod || 
+                        method instanceof EmailAuthenticationMethod ||
+                        method instanceof WindowsHelloForBusinessAuthenticationMethod ||
+                        method instanceof TemporaryAccessPassAuthenticationMethod) {
+                        continue; // skip password, email, WHFB and TAP methods
+                    } else if (method instanceof MicrosoftAuthenticatorAuthenticationMethod) {
+                        // if the default method is push, we will store the Microsoft Authenticator method
+                        cantdelete.add(method);
+                    } else {
+                        try {
+                            MFAExtras.deleteMethod(method.getId());
+                        } catch (ODataError ex) {
+                            // if the method cannot be deleted, add it to the list
+                            //cantdelete.add(method);
+                        }
+                    }
+                }
+                // loop through the methods that cannot be deleted
+                // and delete them
+                for ( AuthenticationMethod method : cantdelete) {
+                    MFAExtras.deleteMethod(method.getId());
+                }
+            } else  if (defaultMethod.equalsIgnoreCase("oath")) {
+                // we cannot delete the default method, so we will loop through all methods
+                // and delete them all except for OATH methods
+                methods = MFAExtras.getUserMfaMethods();
+
+                for (AuthenticationMethod method : methods) {
+                    if (method instanceof PasswordAuthenticationMethod || 
+                        method instanceof EmailAuthenticationMethod ||
+                        method instanceof WindowsHelloForBusinessAuthenticationMethod ||
+                        method instanceof TemporaryAccessPassAuthenticationMethod) {
+                        continue; // skip password, email, WHFB and TAP methods
+                    } else if (method instanceof SoftwareOathAuthenticationMethod ||
+                               method instanceof HardwareOathAuthenticationMethod) {
+                        // if the default method is oath, we will store the oath methods
+                        cantdelete.add(method);
+                    } else {
+                        try {
+                            MFAExtras.deleteMethod(method.getId());
+                        } catch (ODataError ex) {
+                            // if the method cannot be deleted, add it to the list
+                            //cantdelete.add(method);
+                        }
+                    }
+                }
+                
+                for ( AuthenticationMethod method : cantdelete) {
+                    MFAExtras.deleteMethod(method.getId());
+                }
+            } else {
+                methods = MFAExtras.getUserMfaMethods();
+            
+                for (int i = 0; i < 3; i++) {
+                    for (AuthenticationMethod method : methods) {
+                        if (method instanceof PasswordAuthenticationMethod || method instanceof EmailAuthenticationMethod) {
+                            continue; // skip password and email methods
+                        } else {
+                            try {
+                                MFAExtras.deleteMethod(method.getId());
+                            } catch (ODataError ex) {
+                                // if the method cannot be deleted, add it to the list
+                                //cantdelete.add(method);
+                            }
                         }
                     }
                 }
@@ -663,7 +803,8 @@ public class App {
             Boolean successful = false;
             String message = "Please enter the method ID you wish to remove";
             String title = "Remove Authenticaiton Method";
-            String methodId = JOptionPane.showInputDialog(null, message, title, 0);
+            
+            String methodId = JOptionPane.showInputDialog(null, message, title, 0).trim();
 
             frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 

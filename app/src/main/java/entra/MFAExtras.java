@@ -48,6 +48,10 @@ public class MFAExtras {
     final static String defaultVoiceOffice = "voiceOffice";
     final static String defaultVoiceAltMobile = "voiceAlternateMobile";
 
+    // values for possible phone types
+    final static String phoneMobile = "mobile";
+    final static String phoneAltMobile = "alternateMobile";
+    final static String phoneOffice = "office";
     //authentication method ID for password
     final static String passwordId = "28c10230-6103-485e-b985-444c60001490";
 
