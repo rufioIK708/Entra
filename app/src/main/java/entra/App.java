@@ -234,6 +234,15 @@ public class App {
         c.gridy = 3;
         button.addActionListener(e -> createTAP_click((JFrame) SwingUtilities.getWindowAncestor(pane)));
         pane.add(button, c);
+
+        button = new JButton("QR Code");
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.weightx = 0.0;
+        c.gridwidth = 1;
+        c.gridx = 3;
+        c.gridy = 3;
+        button.addActionListener(e -> QRCode_click((JFrame) SwingUtilities.getWindowAncestor(pane)));
+        pane.add(button, c);
     
         /*************************************
          * Keeping this here for reference
@@ -984,6 +993,65 @@ public class App {
                 tapData.isUsableOnce = tapPolicy.getIsUsableOnce();
 
                 MFAExtras.createTAPWindow(tapData);
+            }
+        }
+    }
+
+    public static void QRCode_click (JFrame frame) {
+        String errorTitle = "QRCode Method Policy Error";
+        String nullMessage = "No QRCode method policy found.";
+        String disabledMessage = "QRCode method policy is disabled. Please enable it first.";
+        String groupExclusionMessage = "The active user is included in a group that is excluded from the QRCode method policy.\n"
+                    + "Please remove the user from the group, there may be multiple groups.\n"
+                    + "The group is: ";
+
+
+        //check if the active user is null
+        if (null == activeUser) {
+            JOptionPane.showMessageDialog(null, noActiveUser);
+        }
+        // it is not, we can continue
+        else {
+            //change the cursor, we might be a while
+            frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+            //1. Get the QrCodePin method policy            
+            QrCodePinAuthenticationMethodConfiguration qrPolicy = null;
+
+            try{
+                qrPolicy = (QrCodePinAuthenticationMethodConfiguration)graphClient.policies()
+                    .authenticationMethodsPolicy().authenticationMethodConfigurations()
+                    .byAuthenticationMethodConfigurationId("QRCodePin").get();
+            }
+            catch (ODataError ex) {
+                JOptionPane.showMessageDialog(null, "Error getting QRCode method policy.\n" + ex.getMessage());
+            }
+
+            frame.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+            
+            // we either didn't get a policy or there was an exception getting the policy
+            if (qrPolicy == null) {
+                JOptionPane.showMessageDialog(frame, nullMessage);
+            }
+            // the qrcodepin policy is disabled
+            else if (qrPolicy.getState() == AuthenticationMethodState.Disabled) {
+                JOptionPane.showMessageDialog(frame, disabledMessage);
+            }
+            // the user is included in a group excluded from the policy
+            else if (!MFAExtras.checkGroupMembership(qrPolicy.getExcludeTargets()).equals("None")){
+                groupExclusionMessage += graphClient.groups().byGroupId(MFAExtras.checkGroupMembership(qrPolicy.getExcludeTargets()))
+                        .get().getDisplayName();
+                
+                JOptionPane.showMessageDialog(frame, groupExclusionMessage, errorTitle, JOptionPane.WARNING_MESSAGE);
+            } 
+            // no issues  
+            else {
+                //2. Modify the form to show the options based on the policy
+                //3. Get the input from the user
+                QrCodePinAuthenticationMethod qrCodeAuth = graphClient.users().byUserId(activeUser.getId())
+                    .authentication().qrCodePinMethod().get();
+                
+                MFAExtras.createQrCodeWindow(qrPolicy, qrCodeAuth);
             }
         }
     }

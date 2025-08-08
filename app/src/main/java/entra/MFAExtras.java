@@ -5,6 +5,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JCheckBox;
 import javax.swing.JSpinner;
+import javax.swing.JTabbedPane;
 import javax.swing.SpinnerDateModel;
 import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
@@ -99,7 +100,7 @@ public class MFAExtras {
 
         for (ExcludeTarget group : targets) {
             JOptionPane.showMessageDialog(null, "Checking : " + group.getId());
-            if (isMwemberOfGroup(group.getId())) {
+            if (isMemberOfGroup(group.getId())) {
                 
                 groupId = group.getId();
                 //we got a group and are successful, we can break the loop
@@ -112,7 +113,7 @@ public class MFAExtras {
     }
 
     // Check if user is a member of the passed group
-    public static Boolean isMwemberOfGroup(String groupId) {
+    public static Boolean isMemberOfGroup(String groupId) {
         //initialize var to return and default to false
         Boolean isMember = false;
 
@@ -226,9 +227,8 @@ public class MFAExtras {
                 // Get authentication methods for the active user
                 AuthenticationMethodCollectionResponse methodsResponse = App.graphClient
                         .users().byUserId(App.activeUser.getId())
-                        .authentication()
-                        .methods()
-                        .get();
+                        .authentication().methods().get();
+                
                 // Create string to hold the output
                 StringBuilder message = new StringBuilder("\nAuthentication Methods for " + App.activeUser.getDisplayName() + ":\n");
                 message.append("Default method: ").append(defaultMethod).append("\n");
@@ -238,24 +238,24 @@ public class MFAExtras {
                     {
                         case PlatformCredentialAuthenticationMethod platformMethod:
                             message.append("\nPlatform Credential:\n");
-                            message.append("  ID               : ").append(platformMethod.getId()).append("\n");
-                            message.append("  Display Name     : ").append(platformMethod.getDisplayName()).append("\n");
-                            message.append("  Created DateTime : ").append(platformMethod.getCreatedDateTime()).append("\n");
+                            message.append("  ID                : ").append(platformMethod.getId()).append("\n");
+                            message.append("  Display Name      : ").append(platformMethod.getDisplayName()).append("\n");
+                            message.append("  Created DateTime  : ").append(platformMethod.getCreatedDateTime()).append("\n");
                             break;
                         case WindowsHelloForBusinessAuthenticationMethod whfbMethod:
                             message.append("\nWindows Hello for Business:\n");
-                            message.append("  ID               : ").append(whfbMethod.getId()).append("\n");
-                            message.append("  Display Name     : ").append(whfbMethod.getDisplayName()).append("\n");
-                            message.append("  Device ID        : ").append(whfbMethod.getDevice()).append("\n");
-                            message.append("  Created DateTime : ").append(whfbMethod.getCreatedDateTime()).append("\n");
+                            message.append("  ID                : ").append(whfbMethod.getId()).append("\n");
+                            message.append("  Display Name      : ").append(whfbMethod.getDisplayName()).append("\n");
+                            message.append("  Device ID         : ").append(whfbMethod.getDevice()).append("\n");
+                            message.append("  Created DateTime  : ").append(whfbMethod.getCreatedDateTime()).append("\n");
                             break;
                         case TemporaryAccessPassAuthenticationMethod tapMethod:
                             message.append("\nTemporary Access Pass:\n");
-                            message.append("  ID               : ").append(tapMethod.getId()).append("\n");
-                            message.append("  Is Usable Once   : ").append(tapMethod.getIsUsableOnce()).append("\n");
-                            message.append("  Start DateTime   : ").append(tapMethod.getStartDateTime()).append("\n");
-                            message.append("  Lifetime in Mins : ").append(tapMethod.getLifetimeInMinutes()).append("\n");
-                            message.append("  Created DateTime : ").append(tapMethod.getCreatedDateTime()).append("\n");
+                            message.append("  ID                : ").append(tapMethod.getId()).append("\n");
+                            message.append("  Is Usable Once    : ").append(tapMethod.getIsUsableOnce()).append("\n");
+                            message.append("  Start DateTime    : ").append(tapMethod.getStartDateTime()).append("\n");
+                            message.append("  Lifetime in Mins  : ").append(tapMethod.getLifetimeInMinutes()).append("\n");
+                            message.append("  Created DateTime  : ").append(tapMethod.getCreatedDateTime()).append("\n");
                             break;
                         case SoftwareOathAuthenticationMethod oathMethod:
                             message.append("\nSoftware OATH: ");
@@ -263,10 +263,10 @@ public class MFAExtras {
                                 message.append(" **Usable as Default Method**\n");
                             else
                                 message.append("\n");
-                            message.append("  ID: ").append(oathMethod.getId()).append("\n");
-                            message.append("  Display Name: ").append(oathMethod.getId()).append("\n");
-                            message.append("  Secret Key: ").append(oathMethod.getSecretKey()).append("\n");
-                            message.append("  Created DateTime: ").append(oathMethod.getCreatedDateTime()).append("\n");
+                            message.append("  ID                : ").append(oathMethod.getId()).append("\n");
+                            message.append("  Display Name      : ").append(oathMethod.getId()).append("\n");
+                            message.append("  Secret Key        : ").append(oathMethod.getSecretKey()).append("\n");
+                            message.append("  Created DateTime  : ").append(oathMethod.getCreatedDateTime()).append("\n");
                             break;
                         case MicrosoftAuthenticatorAuthenticationMethod authMethod:
                             message.append("\nMicrosoft Authenticator: ");
@@ -302,14 +302,14 @@ public class MFAExtras {
                             break;
                         case PasswordAuthenticationMethod passwordMethod:
                             message.append("\nPassword Method :\n");
-                            message.append("  Id               : ").append(passwordMethod.getId()).append("\n");
-                            message.append("  Created DateTime : ").append("\n");
+                            message.append("  Id                : ").append(passwordMethod.getId()).append("\n");
+                            message.append("  Created DateTime  : ").append("\n");
                             break;
                         case EmailAuthenticationMethod emailMethod:
                             message.append("\nEmail Method   :\n");
-                            message.append("  Id               : ").append(emailMethod.getId()).append("\n");
-                            message.append("  Email Address    : ").append(emailMethod.getEmailAddress()).append("\n");
-                            message.append("  Created DateTime : ").append(emailMethod.getCreatedDateTime()).append("\n");
+                            message.append("  Id                : ").append(emailMethod.getId()).append("\n");
+                            message.append("  Email Address     : ").append(emailMethod.getEmailAddress()).append("\n");
+                            message.append("  Created DateTime  : ").append(emailMethod.getCreatedDateTime()).append("\n");
                             break;
                         case HardwareOathAuthenticationMethod hardOathMethod:
                             message.append("\nHardware OATH: ");
@@ -334,12 +334,39 @@ public class MFAExtras {
                         
                         case QrCodePinAuthenticationMethod qrCodePinMethod:
                             message.append("\nQR Code PIN Method: \n");
+                            
+                            if (null != qrCodePinMethod.getStandardQRCode()) {
+                                QrCode stdMethod = qrCodePinMethod.getStandardQRCode();
+                                message.append(" Standard QR Code\n");
+                                message.append("  ID                : ").append(stdMethod.getId()).append("\n");
+                                message.append("  Created DateTime  : ").append(stdMethod.getCreatedDateTime()).append("\n");
+                                message.append("  Start DateTime    : ").append(stdMethod.getStartDateTime()).append("\n");
+                                message.append("  Expires DateTime  : ").append(stdMethod.getExpireDateTime()).append("\n");
+                                message.append("  LastUsed DateTime : ").append(stdMethod.getLastUsedDateTime()).append("\n");
+                            }
+                            if (null != qrCodePinMethod.getTemporaryQRCode()) {
+                                QrCode tmpMethod = qrCodePinMethod.getTemporaryQRCode();
+                                message.append(" Temporary QR Code\n");
+                                message.append("  ID                : ").append(tmpMethod.getId()).append("\n");
+                                message.append("  Created DateTime  : ").append(tmpMethod.getCreatedDateTime()).append("\n");
+                                message.append("  Start DateTime    : ").append(tmpMethod.getStartDateTime()).append("\n");
+                                message.append("  Expires DateTime  : ").append(tmpMethod.getExpireDateTime()).append("\n");
+                                message.append("  LastUsed DateTime : ").append(tmpMethod.getLastUsedDateTime()).append("\n");
+                            }
+                            if (null != qrCodePinMethod.getPin()) {
+                                QrPin qrPin = qrCodePinMethod.getPin();
+                                message.append(" QR Code PIN\n");
+                                message.append("  ID                : ").append(qrPin.getId()).append("\n");
+                                message.append("  Created DateTime  : ").append(qrPin.getCreatedDateTime()).append("\n");
+                                message.append("  Updated DateTime  : ").append(qrPin.getUpdatedDateTime()).append("\n");
+                                message.append("  ForceChange       : ").append(qrPin.getForceChangePinNextSignIn()).append("\n");
+                            }
                             break;
                         // this list is all inclusive, so we should not get here
                         default:
                             message.append("\nOther Method Type : ").append(method.getOdataType());
-                            message.append("  ID              : ").append(method.getId()).append("\n");
-                            message.append("  Created DateTime: ").append(method.getCreatedDateTime()).append("\n");
+                            message.append("  ID                : ").append(method.getId()).append("\n");
+                            message.append("  Created DateTime  : ").append(method.getCreatedDateTime()).append("\n");
                             break;
                     }
                     // Add more else-if blocks for other method types as needed
@@ -1029,4 +1056,62 @@ public class MFAExtras {
         
         return isDefault;
     }
+
+    public static void createQrCodeWindow (QrCodePinAuthenticationMethodConfiguration qrPolicy, 
+        QrCodePinAuthenticationMethod qrCodeMethod) {
+        //initialize a new JFrame and the pane
+        
+
+        JFrame qrCodeWindow = new JFrame();
+        Container pane = new Container();
+        Container pane2 = new Container();
+
+        //set strings
+        String message01 = "QR Code PIN Method is not yet implemented.";
+        String message02 = "QR Code PIN Method is still not yet implemented.";
+        String windowTitle = "QR Code";
+
+        //Configure the new window
+        qrCodeWindow.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        qrCodeWindow.setSize(600,250);
+        qrCodeWindow.setLayout(new GridLayout(1,1));
+        qrCodeWindow.setTitle(windowTitle);
+        pane.setLayout(new GridBagLayout());
+        pane.setBackground(qrCodeWindow.getBackground());
+        pane2.setLayout(new GridBagLayout());
+        pane2.setBackground(qrCodeWindow.getBackground());
+
+        GridBagConstraints c = new GridBagConstraints();
+        c.fill = GridBagConstraints.HORIZONTAL;
+
+        //create variables for the needed components
+        JTabbedPane tabbedPane = new JTabbedPane();
+        
+        JLabel label;
+        
+        label = new JLabel(message01);
+        c.weightx = 0.0;
+        c.gridwidth = 3;
+        c.ipadx = 10;
+        c.ipady = 10;
+        c.gridx = 0;
+        c.gridy = 0;
+        pane.add(label, c);
+
+        label = new JLabel(message02);
+        c.weightx = 0.0;
+        c.gridwidth = 2;
+        c.ipadx = 10;
+        c.ipady = 10;
+        c.gridx = 0;
+        c.gridy = 1;
+        pane2.add(label, c);
+
+        tabbedPane.addTab("Create QR Code", pane);
+        tabbedPane.addTab("Reset QR Code PIN", pane2);
+        qrCodeWindow.add(tabbedPane);
+
+        qrCodeWindow.setVisible(true);
+    }
 }
+
