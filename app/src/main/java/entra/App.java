@@ -1048,9 +1048,15 @@ public class App {
             else {
                 //2. Modify the form to show the options based on the policy
                 //3. Get the input from the user
-                QrCodePinAuthenticationMethod qrCodeAuth = graphClient.users().byUserId(activeUser.getId())
-                    .authentication().qrCodePinMethod().get();
-                
+                QrCodePinAuthenticationMethod qrCodeAuth = null;
+
+                try {
+                    qrCodeAuth = graphClient.users().byUserId(activeUser.getId())
+                        .authentication().qrCodePinMethod().get();
+                } catch (ODataError e){
+                    if(404 != e.getResponseStatusCode())
+                        JOptionPane.showMessageDialog(null, e.getMessage());
+                }
                 MFAExtras.createQrCodeWindow(qrPolicy, qrCodeAuth);
             }
         }
