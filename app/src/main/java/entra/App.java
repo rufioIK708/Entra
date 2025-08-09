@@ -837,7 +837,7 @@ public class App {
                     outputArea.scrollRectToVisible(outputArea.getVisibleRect());
                 }
                 else {
-                    JOptionPane.showMessageDialog(frame, "Error deleting method. Please try again.");
+                    //JOptionPane.showMessageDialog(frame, "Error deleting method. Please try again.");
                 }
             }
 
@@ -1026,8 +1026,6 @@ public class App {
             catch (ODataError ex) {
                 JOptionPane.showMessageDialog(null, "Error getting QRCode method policy.\n" + ex.getMessage());
             }
-
-            frame.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
             
             // we either didn't get a policy or there was an exception getting the policy
             if (qrPolicy == null) {
@@ -1057,8 +1055,10 @@ public class App {
                     if(404 != e.getResponseStatusCode())
                         JOptionPane.showMessageDialog(null, e.getMessage());
                 }
-                MFAExtras.createQrCodeWindow(qrPolicy, qrCodeAuth);
+                MFAExtras.createQrCodeWindow(qrPolicy, qrCodeAuth, frame);
             }
+
+            frame.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
         }
     }
 
