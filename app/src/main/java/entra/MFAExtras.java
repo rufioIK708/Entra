@@ -1152,102 +1152,8 @@ public class MFAExtras {
         
         //if a standard qrcode already exists, display the details
         if(null != stdCode) {
-            // title row
-            label = new JLabel(labelStdDisplayTitle);
-            c.weightx = 0.0;
-            c.gridwidth = 2;
-            c.ipadx = 10;
-            c.ipady = 10;
-            c.gridx = 0;
-            c.gridy = 0;
-            paneStdCode.add(label, c);
-
-            //ID row
-            label = new JLabel(labelId);
-            c.gridwidth = 1;
-            c.gridx = 0;
-            c.gridy = 1;
-            paneStdCode.add(label, c);
-
-            label = new JLabel(stdCode.getId().toString());
-            c.gridwidth = 1;
-            c.gridx = 1;
-            c.gridy = 1;
-            paneStdCode.add(label, c);
-
-            //created row
-            label = new JLabel(labelCreated);
-            c.gridwidth = 1;
-            c.gridx = 0;
-            c.gridy = 2;
-            paneStdCode.add(label, c);
-
-            label = new JLabel(stdCode.getCreatedDateTime().toLocalDateTime().toString());
-            c.gridwidth = 1;
-            c.gridx = 1;
-            c.gridy = 2;
-            paneStdCode.add(label, c);
-
-            BufferedImage qrCode = null;
-
-            if (null != stdCode.getImage() && stdCode.getImage().getBinaryValue() != null) {
-                try {
-                    qrCode = ImageIO.read(new java.io.ByteArrayInputStream(stdCode.getImage().getBinaryValue()));
-                } catch (Exception e) {
-                    qrCode = null;
-                }
-
-                label = new JLabel(new ImageIcon(qrCode));
-                c.gridheight = 3;
-                c.gridwidth = 1;
-                c.gridx = 2;
-                c.gridy = 3;
-                paneStdCode.add(label, c);
-            }
-
-            //active datetime row
-            label = new JLabel(labelActive);
-            c.gridheight = 1;
-            c.gridwidth = 1;
-            c.gridx = 0;
-            c.gridy = 4;
-            paneStdCode.add(label, c);
-
-            label = new JLabel(stdCode.getStartDateTime().toString());
-            c.gridwidth = 1;
-            c.gridx = 1;
-            c.gridy = 4;
-            paneStdCode.add(label, c);
-
-            //expires datetime row
-            label = new JLabel(labelExpires);
-            c.gridwidth = 1;
-            c.gridx = 0;
-            c.gridy = 5;
-            paneStdCode.add(label, c);
-
-            label = new JLabel(stdCode.getExpireDateTime().toString());
-            c.gridwidth = 1;
-            c.gridx = 1;
-            c.gridy = 5;
-            paneStdCode.add(label, c);
-            
-            button = new JButton("Change Expiration");
-            c.gridwidth = 1;
-            c.gridx = 2;
-            c.gridy = 5;
-            paneStdCode.add(button, c);
-
-            label = new JLabel(labelLastUsed);
-            label = new JLabel(stdCode.getLastUsedDateTime().toString());
-
-            // Delete button
-            button = new JButton("Delete Standard QR Code");
-            c.insets = insetsButton;
-            c.gridwidth = 3;
-            c.gridx = 0;
-            c.gridy = 8;
-            paneStdCode.add(button, c);
+            Boolean isStandard = true;
+            drawDetailsPane(paneStdCode, isStandard, stdCode);
         }
         // a standard code doesn't exist, show creation optoins
         else {
@@ -1442,89 +1348,8 @@ public class MFAExtras {
 
         // there is a standard method and a temporary one, show details
         } else if ( null != stdCode && null != tmpCode ) {
-            // title row
-            label = new JLabel(labelTmpDisplayTitle);
-            c.weightx = 0.0;
-            c.gridwidth = 2;
-            c.ipadx = 10;
-            c.ipady = 10;
-            c.gridx = 0;
-            c.gridy = 0;
-            paneTmpCode.add(label, c);
-
-            //ID row
-            label = new JLabel(labelId);
-            c.gridwidth = 1;
-            c.gridx = 0;
-            c.gridy = 1;
-            paneTmpCode.add(label, c);
-
-            label = new JLabel(tmpCode.getId());
-            c.gridwidth = 1;
-            c.gridx = 1;
-            c.gridy = 1;
-            paneTmpCode.add(label, c);
-
-            //created row
-            label = new JLabel(labelCreated);
-            c.gridwidth = 1;
-            c.gridx = 0;
-            c.gridy = 2;
-            paneTmpCode.add(label, c);
-
-            label = new JLabel(tmpCode.getCreatedDateTime().toString());
-            c.gridwidth = 1;
-            c.gridx = 1;
-            c.gridy = 2;
-            paneTmpCode.add(label, c);
-
-            //active datetime row
-            label = new JLabel(labelActive);
-            c.gridwidth = 1;
-            c.gridx = 0;
-            c.gridy = 3;
-            paneTmpCode.add(label, c);
-
-            label = new JLabel(tmpCode.getStartDateTime().toLocalDateTime().toString());
-            c.gridwidth = 1;
-            c.gridx = 1;
-            c.gridy = 3;
-            paneTmpCode.add(label, c);
-
-            //expires datetime row
-            label = new JLabel(labelExpires);
-            c.gridwidth = 1;
-            c.gridx = 0;
-            c.gridy = 4;
-            paneTmpCode.add(label, c);
-
-            label = new JLabel(tmpCode.getExpireDateTime().toLocalDateTime().toString());
-            c.gridwidth = 1;
-            c.gridx = 1;
-            c.gridy = 4;
-            paneTmpCode.add(label, c);
-
-            //last used row
-            label = new JLabel(labelLastUsed);
-            c.gridwidth = 1;
-            c.gridx = 0;
-            c.gridy = 5;
-            paneTmpCode.add(label, c);
-
-            label = new JLabel(tmpCode.getLastUsedDateTime().toLocalDateTime().toString());
-            c.gridwidth = 1;
-            c.gridx = 1;
-            c.gridy = 5;
-            paneTmpCode.add(label, c);
-
-            // Delete button
-            button = new JButton("Delete Temporary QR Code");
-            c.insets = insetsButton;
-            c.gridwidth = 2;
-            c.gridx = 0;
-            c.gridy = 8;
-            paneTmpCode.add(button, c);
-
+            Boolean isStandard = false;
+            drawDetailsPane(paneTmpCode, isStandard, tmpCode);
             
         }
 
@@ -1623,9 +1448,115 @@ public class MFAExtras {
         JOptionPane.showMessageDialog(null, "Create Code button was clicked");
     }
 
-    private static void drawDetailsPane(Container pane, Boolean isStandard) {
+    private static void drawDetailsPane(Container pane, Boolean isStandard, QrCode code) {
+        JLabel label;
+        JButton button;
+        GridBagConstraints c = new GridBagConstraints();
 
+        // title row
+        label = new JLabel(labelStdDisplayTitle);
+        c.weightx = 0.0;
+        c.gridwidth = 2;
+        c.ipadx = 10;
+        c.ipady = 10;
+        c.gridx = 0;
+        c.gridy = 0;
+        pane.add(label, c);
+
+        //ID row
+        label = new JLabel(labelId);
+        c.gridwidth = 1;
+        c.gridx = 0;
+        c.gridy = 1;
+        pane.add(label, c);
+
+        label = new JLabel(code.getId().toString());
+        c.gridwidth = 1;
+        c.gridx = 1;
+        c.gridy = 1;
+        pane.add(label, c);
+
+        //created row
+        label = new JLabel(labelCreated);
+        c.gridwidth = 1;
+        c.gridx = 0;
+        c.gridy = 2;
+        pane.add(label, c);
+
+        label = new JLabel(code.getCreatedDateTime().toLocalDateTime().toString());
+        c.gridwidth = 1;
+        c.gridx = 1;
+        c.gridy = 2;
+        pane.add(label, c);
+
+        BufferedImage qrCode = null;
+
+        if (null != code.getImage() && code.getImage().getBinaryValue() != null) {
+            try {
+                qrCode = ImageIO.read(new java.io.ByteArrayInputStream(code.getImage().getBinaryValue()));
+            } catch (Exception e) {
+                qrCode = null;
+            }
+
+            label = new JLabel(new ImageIcon(qrCode));
+            c.gridheight = 3;
+            c.gridwidth = 1;
+            c.gridx = 2;
+            c.gridy = 3;
+            pane.add(label, c);
+        }
+
+        //active datetime row
+        label = new JLabel(labelActive);
+        c.gridheight = 1;
+        c.gridwidth = 1;
+        c.gridx = 0;
+        c.gridy = 4;
+        pane.add(label, c);
+
+        label = new JLabel(code.getStartDateTime().toString());
+        c.gridwidth = 1;
+        c.gridx = 1;
+        c.gridy = 4;
+        pane.add(label, c);
+
+        //expires datetime row
+        label = new JLabel(labelExpires);
+        c.gridwidth = 1;
+        c.gridx = 0;
+        c.gridy = 5;
+        pane.add(label, c);
+
+        label = new JLabel(code.getExpireDateTime().toString());
+        c.gridwidth = 1;
+        c.gridx = 1;
+        c.gridy = 5;
+        pane.add(label, c);
+        
+        // if this is a standard method, show the change expiration button
+        if (isStandard) {
+            button = new JButton("Change Expiration");
+            c.gridwidth = 1;
+            c.gridx = 2;
+            c.gridy = 5;
+            pane.add(button, c);
+        }
+
+        label = new JLabel(labelLastUsed);
+        label = new JLabel(code.getLastUsedDateTime().toString());
+
+        // Delete button
+        if (isStandard) 
+            button = new JButton("Delete Standard QR Code");
+        else
+            button = new JButton("Delete Temporary QR Code");
+        //c.insets = insetsButton;
+        c.gridwidth = 3;
+        c.gridx = 0;
+        c.gridy = 8;
+        pane.add(button, c);
     }
+
     public static void activateLater_Check(Container pane, GridBagConstraints c) {
         for (Component comp : pane.getComponents()) {
             if (null == comp.getName())
