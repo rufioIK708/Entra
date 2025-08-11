@@ -38,6 +38,8 @@ public class App {
     static GraphServiceClient graphClient;
     static JTextArea outputArea = null;
     static JTextArea userInfoArea = null;
+    static QrCodePinAuthenticationMethodConfiguration qrPolicy = null;
+    static QrCodePinAuthenticationMethod qrCodeMethod = null;
     final static String clientId = "492bc3cf-c421-4332-9e96-f56547f3ed56";
     final static String tenantId = "common";
     
@@ -404,8 +406,10 @@ public class App {
     // This will prompt the user for a User Principal Name (UPN) and get the user details
     // and display them in the output area.
     public static void getAUser_click(JFrame frame) {
-        String message = "Enter the User Principal Name (UPN) of the user:";
+        String message = "Enter the User Principal Name (UPN)\n" +
+            "or Object ID of the user:";
         String title = "Get User";
+        String messageSuccess = "User found: ";
 
         String userPrincipalName = JOptionPane.showInputDialog(frame, message, title, JOptionPane.QUESTION_MESSAGE).trim();
 
@@ -414,15 +418,13 @@ public class App {
             try {
                 User user = graphClient.usersWithUserPrincipalName(userPrincipalName).get();
                 activeUser = user;
-                JOptionPane.showMessageDialog(frame, "User found: " + user.getDisplayName());
+                JOptionPane.showMessageDialog(frame, messageSuccess + user.getDisplayName());
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(frame, "Error getting user: " + ex.getMessage());
                 activeUser = null;
             }
             frame.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-        } else {
-            JOptionPane.showMessageDialog(frame, "User Principal Name cannot be empty.");
-            activeUser = null;
+        } else if(userPrincipalName == null || userPrincipalName.isEmpty()) {
             return;
         }
 
@@ -446,20 +448,27 @@ public class App {
             outputArea.append(outputString);
         }
         
-        JButton button = new JButton();
+        JButton button = null;
 
         //get the button
         for (Component comp : frame.getContentPane().getComponents()) {
             if (comp instanceof JButton) {
                 if (((JButton)comp).getText().contains("Account"))
                     button = ((JButton)comp);
+            }
         }
+
         //update the button.
-        if (activeUser != null && activeUser.getAccountEnabled())
-            button.setText("Disable Account");
-        else
-            button.setText("Enable Account");
+        if (null != button){
+            if (activeUser != null && activeUser.getAccountEnabled())
+                button.setText("Disable Account");
+            else if (activeUser != null && activeUser.getAccountEnabled())
+                button.setText("Enable Account");
         }
+
+        
+
+        frame.repaint();
     }
 
     // Click on Get User Security Methods button
@@ -829,15 +838,17 @@ public class App {
             frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
             if (null != methodId && !methodId.isEmpty()){
+                String messageSuccess = MFAExtras.getMethodName(MFAExtras.getAuthenticationMethod(methodId))
+                         + " method has been deleted. \n";
+                
                 successful = MFAExtras.deleteMethod(methodId);
                 
                 if (successful) {
-                    outputArea.append(MFAExtras.getMethodName(MFAExtras.getAuthenticationMethod(methodId))
-                         + " method has been deleted. \n");
-                    outputArea.scrollRectToVisible(outputArea.getVisibleRect());
+                    outputArea.append(messageSuccess);
+                    //outputArea.scrollRectToVisible(outputArea.getVisibleRect());
                 }
                 else {
-                    //JOptionPane.showMessageDialog(frame, "Error deleting method. Please try again.");
+                    JOptionPane.showMessageDialog(frame, "Error deleting method. Please try again.");
                 }
             }
 
@@ -998,6 +1009,7 @@ public class App {
     }
 
     public static void QRCode_click (JFrame frame) {
+        String windowTitle = "QR Code Authentication Window";
         String errorTitle = "QRCode Method Policy Error";
         String nullMessage = "No QRCode method policy found.";
         String disabledMessage = "QRCode method policy is disabled. Please enable it first.";
@@ -1016,7 +1028,7 @@ public class App {
             frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
             //1. Get the QrCodePin method policy            
-            QrCodePinAuthenticationMethodConfiguration qrPolicy = null;
+            
 
             try{
                 qrPolicy = (QrCodePinAuthenticationMethodConfiguration)graphClient.policies()
@@ -1046,16 +1058,25 @@ public class App {
             else {
                 //2. Modify the form to show the options based on the policy
                 //3. Get the input from the user
-                QrCodePinAuthenticationMethod qrCodeAuth = null;
 
                 try {
-                    qrCodeAuth = graphClient.users().byUserId(activeUser.getId())
+                    qrCodeMethod = graphClient.users().byUserId(activeUser.getId())
                         .authentication().qrCodePinMethod().get();
                 } catch (ODataError e){
                     if(404 != e.getResponseStatusCode())
                         JOptionPane.showMessageDialog(null, e.getMessage());
                 }
-                MFAExtras.createQrCodeWindow(qrPolicy, qrCodeAuth, frame);
+
+                JFrame qrCodeFrame = new JFrame();
+                qrCodeFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+                qrCodeFrame.setSize(600,250);
+                qrCodeFrame.setLocation(frame.getLocationOnScreen());
+                qrCodeFrame.setLayout(new GridLayout(1,1));
+                qrCodeFrame.setTitle(windowTitle);
+
+                MFAExtras.fillQrCodeWindow(qrCodeFrame);
+
+                qrCodeFrame.setVisible(true);
             }
 
             frame.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));

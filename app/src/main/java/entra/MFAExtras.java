@@ -23,6 +23,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.text.NumberFormat;
 import java.time.OffsetDateTime;
 //import java.time.ZoneId;
@@ -31,12 +33,14 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Calendar;
 
 import com.microsoft.graph.beta.models.*;
 //import com.microsoft.graph.beta.models.ExternalAuthenticationType;
 //import com.microsoft.graph.beta.models.odataerrors.*;
 import com.microsoft.graph.beta.models.odataerrors.ODataError;
+import com.microsoft.graph.core.CoreConstants.OdataInstanceAnnotations;
 
 //import io.jsonwebtoken.security.Password;
 
@@ -59,53 +63,62 @@ public class MFAExtras {
     final static String defaultVoiceAltMobile = "voiceAlternateMobile";
 
     //set strings
-        static String messageStdCodeExists = "You have an existing Standard QR Code method";
-        static String messageStdCodeNew = "You need to create a new Standard QR Code method";
-        static String messageTmpCodeNoStd = "You must configure a standard code before you can configure a temporary one.\n";
-        static String messagePinNoStd = "You must configure a standard code in order to view/reset PIN information.\n" +
+        static final String messageStdCodeExists = "You have an existing Standard QR Code method";
+        static final String messageStdCodeNew = "You need to create a new Standard QR Code method";
+        static final String messageTmpCodeNoStd = "You must configure a standard code before you can configure a temporary one.\n";
+        static final String messagePinNoStd = "You must configure a standard code in order to view/reset PIN information.\n" +
             "If this user has a standard QR code, then it needs to be deleted so you can create a new PIN.";
-        static String windowTitle = "QR Code Authentication";
-        static String labelLifeTime = "LifeTime in hours : ";
-        static String labelLastUsed = "Last Used DateTime : ";
-        static String labelCreated = "Created DateTime : ";
-        static String labelActive = "Active DateTime : ";
-        static String labelExpires = "Expiration DateTime : ";
-        static String labelUpdated = "Updated DateTime : ";
-        static String labelId = "Id : ";
-        static String labelStdDisplayTitle = "Standard QR Code Details";
-        static String labelTmpDisplayTitle = "Temporary QR Code Details";
-        static String labelPinDisplayTitle = "PIN Information";
-        static String labelStdCreateTitle = "Standard QR Code Creation Options";
-        static String labelTmpCreateTitle = "Temporary QR Code Creation Options";
-        static String labelActivationDate = "Set Activation Date : "; 
-        static String labelSetExp = "Set Expiration Date : ";
-        static String labelActivateLater = "Activate Later";
-        static String labelForceChange = "Force Change on next signin:";
-        static String labelName = "activateLaterLabel";
-        static String nameStdCodePane = "StdPane";
-        static String nameTmpCodePane = "TmpPane";
-        static String namePinPane = "PINPane";
-        static String labelEnterPin = "Enter PIN";
-        static String dateSpinnerAct = "dateSpinnerAct";
-        static String dateSpinnerExp = "dateSpinnerExp";
-        static String spinnerTmpLife = "TmpLifetimeSpinner";
-        static String buttonDelStd = "Delete a Standard QR Code";
-        static String buttonDelTmp = "Delete a Temporary QR Code";
-        static String buttonCreateStd = "Create a Standard QR Code";
-        static String buttonCreateTmp = "Create a Temporary QR Code";
-        static String buttonChangeExp = "Change Expiration Date";
-        static String labelNoPinExplanation = "This user has a PIN configured. You can RESET it if needed.";
-        static String stringDefaultMethod = " **Default Method**\n";
+        //static final String windowTitle = "QR Code Authentication";
+        static final String labelLifeTime = "LifeTime in hours : ";
+        static final String labelLastUsed = "Last Used DateTime : ";
+        static final String labelCreated = "Created DateTime : ";
+        static final String labelActive = "Active DateTime : ";
+        static final String labelExpires = "Expiration DateTime : ";
+        static final String labelUpdated = "Updated DateTime : ";
+        static final String labelId = "Id : ";
+        static final String labelStdDisplayTitle = "Standard QR Code Details";
+        static final String labelTmpDisplayTitle = "Temporary QR Code Details";
+        static final String labelPinDisplayTitle = "PIN Information";
+        static final String labelStdCreateTitle = "Standard QR Code Creation Options";
+        static final String labelTmpCreateTitle = "Temporary QR Code Creation Options";
+        static final String labelActivationDate = "Set Activation Date : "; 
+        static final String labelSetExp = "Set Expiration Date : ";
+        static final String labelActivateLater = "Activate Later";
+        static final String labelForceChange = "Force Change on next signin:";
+        static final String labelName = "activateLaterLabel";
+        static final String nameStdCodePane = "StdPane";
+        static final String nameTmpCodePane = "TmpPane";
+        static final String namePinPane = "PINPane";
+        static final String namePinInput = "PinInput";
+        static final String nameActivateLaterCheck = "ActivateLaterCheck";
+        static final String StdCodePane = "Standard QR Code";
+        static final String TmpCodePane = "Temporary QR Code";
+        static final String PinCodePane = "PIN";
+        static final String labelEnterPin = "Enter PIN";
+        static final String dateSpinnerAct = "dateSpinnerAct";
+        static final String dateSpinnerExp = "dateSpinnerExp";
+        static final String spinnerTmpLife = "TmpLifetimeSpinner";
+        static final String buttonDelStd = "Delete this Standard QR Code";
+        static final String buttonDelTmp = "Delete this Temporary QR Code";
+        static final String buttonCreateStd = "Create a Standard QR Code";
+        static final String buttonCreateTmp = "Create a Temporary QR Code";
+        static final String buttonChangeExp = "Change Expiration Date";
+        static final String buttonResetPin = "Reset PIN";
+        static final String labelNoPinExplanation = "This user has a PIN configured. You can RESET it if needed.";
+        static final String labelNewPin = "New PIN : ";
+        static final String stringDefaultMethod = " **Default Method**\n";
+        static final String stringPinToolTip = "Only viewable with a new standard QR Code, or reset the previous PIN.";
+        static final String stringPinEntryToolTip = "Leave blank to generate a temporary PIN.";
 
-        static Integer stdMinLifeTime = 1;
-        static Integer stdMaxLifeTime = 395;
-        static Integer tmpLifeMin = 1;
-        static Integer tmpLifeMax = 12;
-        static Integer tmpLifeDefault = 3;
-        static Integer tmpLifeStep = 1;
+        static final Integer stdMinLifeTime = 1;
+        static final Integer stdMaxLifeTime = 395;
+        static final Integer tmpLifeMin = 1;
+        static final Integer tmpLifeMax = 12;
+        static final Integer tmpLifeDefault = 3;
+        static final Integer tmpLifeStep = 1;
 
-        static Insets insetsButton = new Insets(0,50,0,50);
-        static Insets insetZero = new Insets(0,0,0,0);
+        static final Insets insetsButton = new Insets(0,50,0,50);
+        static final Insets insetZero = new Insets(0,0,0,0);
     
     // values for possible phone types
     final static String phoneMobile = "mobile";
@@ -391,7 +404,7 @@ public class MFAExtras {
                             break;
                         
                         case QrCodePinAuthenticationMethod qrCodePinMethod:
-                            message.append("\nQR Code PIN Method: \n");
+                            message.append("\nQR Code PIN Method: " + qrCodePinMethod.getId() + "\n");
                             
                             if (null != qrCodePinMethod.getStandardQRCode()) {
                                 QrCode stdMethod = qrCodePinMethod.getStandardQRCode();
@@ -444,6 +457,7 @@ public class MFAExtras {
         //Boolean print = false;
         String error = "Error deleting method : ";
         String errorTitle = "Error removing method";
+        String messagePasswordError = "Unable to delete passwords.";
 
         var MFAList = getUserMfaMethods();
 
@@ -545,7 +559,7 @@ public class MFAExtras {
                         }
                         break;
                     case PasswordAuthenticationMethod passwordMethod:
-                        JOptionPane.showMessageDialog(null, "Unable to delete passwords.", errorTitle, 0);
+                        JOptionPane.showMessageDialog(null, messagePasswordError, errorTitle, 0);
                         break;
                     case EmailAuthenticationMethod emailMethod:
                         try {
@@ -754,7 +768,7 @@ public class MFAExtras {
 
         checkBox = new JCheckBox();
         checkBox.setName("usableOnceCheckBox");
-        checkBox.setToolTipText("If this box is disabled, one-time-use is required by your settings.");
+        checkBox.setToolTipText("If disabled, one-time-use is required by your settings.");
         if (tapData.isUsableOnce) {
             checkBox.setSelected(true);
             checkBox.setEnabled(false);
@@ -848,11 +862,11 @@ public class MFAExtras {
                 "Temporary Access Pass Lifetime in Minutes: " + result.getLifetimeInMinutes() + "\n";
 
             JOptionPane.showMessageDialog(frame, message, "TAP Created", JOptionPane.INFORMATION_MESSAGE);
-        }
+        } else 
+            JOptionPane.showMessageDialog(frame, "Unable to read result.");
 
         //close the window
         frame.dispose();
-
     }
 
     public static void createAddMethodWindow() {
@@ -1149,36 +1163,25 @@ public class MFAExtras {
         return isDefault;
     }
 
-    public static void createQrCodeWindow (QrCodePinAuthenticationMethodConfiguration qrPolicy, 
-        QrCodePinAuthenticationMethod qrCodeMethod, JFrame originalFrame) {
+    public static void fillQrCodeWindow (JFrame qrCodeWindow) {
         // split out the authentication methods in qrCodeMethod to make them easier to access
 
         QrCode stdCode = null;
         QrCode tmpCode = null;
         QrPin qrPin = null;
 
-        if (null != qrCodeMethod) {
-            stdCode = qrCodeMethod.getStandardQRCode();
-            tmpCode = qrCodeMethod.getTemporaryQRCode();
-            qrPin = qrCodeMethod.getPin();
+        if (null != App.qrCodeMethod) {
+            stdCode = App.qrCodeMethod.getStandardQRCode();
+            tmpCode = App.qrCodeMethod.getTemporaryQRCode();
+            qrPin = App.qrCodeMethod.getPin();
         }
 
-        Integer pinLength = qrPolicy.getPinLength();
-        Integer defaultLifetime = qrPolicy.getStandardQRCodeLifetimeInDays();
-        
-
-        //initialize a new JFrame and the pane
-        JFrame qrCodeWindow = new JFrame();
+        //initialize a new panes        
         Container paneStdCode = new Container();
         Container paneTmpCode = new Container();
         Container panePin = new Container();
         
-        //Configure the new window
-        qrCodeWindow.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        qrCodeWindow.setSize(600,250);
-        qrCodeWindow.setLocation(originalFrame.getLocation());
-        qrCodeWindow.setLayout(new GridLayout(1,1));
-        qrCodeWindow.setTitle(windowTitle);
+        //configure the panes
         paneStdCode.setLayout(new GridBagLayout());
         paneStdCode.setBackground(qrCodeWindow.getBackground());
         paneStdCode.setName(nameStdCodePane);
@@ -1190,11 +1193,12 @@ public class MFAExtras {
         panePin.setName(namePinPane);
         
 
-        //create variables for the needed components
+        //create variables for other needed components
         JTabbedPane tabbedPane = new JTabbedPane();
         JLabel label;
         GridBagConstraints c = new GridBagConstraints();
         c.fill = GridBagConstraints.CENTER;
+        Integer pinLength = App.qrPolicy.getPinLength();
 
         /////////////////////////
         //  STANDARD QR CODE PANE
@@ -1207,7 +1211,7 @@ public class MFAExtras {
         }
         // a standard code doesn't exist, show creation optoins
         else {
-            drawCreateCodePane(paneStdCode, qrPolicy, qrCodeMethod);
+            drawCreateCodePane(paneStdCode);
         }
 
         /////////////////////////
@@ -1228,7 +1232,7 @@ public class MFAExtras {
         }
         // there is a standard method but not a temporary one, show create options
         else if ( null != stdCode && null == tmpCode) {
-            drawCreateCodePane(paneTmpCode, qrPolicy, qrCodeMethod);
+            drawCreateCodePane(paneTmpCode);
 
         // there is a standard method and a temporary one, show details
         } else if ( null != stdCode && null != tmpCode ) {
@@ -1253,24 +1257,54 @@ public class MFAExtras {
         }
         // there is a PIN method, so we display the PIN info
         else {
-            drawPinDetailsPane(panePin, qrPin);
+            drawPinDetailsPane(panePin, qrPin, pinLength);
         }
 
-        tabbedPane.addTab("Standard QR Code", paneStdCode);
-        tabbedPane.addTab("Temporary QR Code", paneTmpCode);
-        tabbedPane.addTab("PIN", panePin);
+        tabbedPane.addTab(StdCodePane, paneStdCode);
+        tabbedPane.addTab(TmpCodePane, paneTmpCode);
+        tabbedPane.addTab(PinCodePane, panePin);
 
         qrCodeWindow.add(tabbedPane);
 
-        qrCodeWindow.setVisible(true);
+        //qrCodeWindow.setVisible(true);
     }
 
-    public static void resetQRCodePin() {
-        String message = "Reset PIN Button was clicked";
-        JOptionPane.showMessageDialog(null, message);
+    public static void resetQRCodePin(Container pane, Integer pinLength) {
+        String message = "Please enter a PIN below\n" +
+            "It must be " + pinLength + " digits long.\n" +
+            "You may also enter \'System\' to generate one.";
+        String system = "System";
+        //JOptionPane.showMessageDialog(null, message);
+
+
+        QrPin update = new QrPin();
+        String pinInput = JOptionPane.showInputDialog(null, message);
+
+        if(null != pinInput) {
+            if(pinInput.equals(system))
+                pinInput = "";
+        }
+        update.setCode(pinInput);
+        update.setOdataType("#microsoft.graph.qrPin");
+
+        QrPin result = null;
+
+        try {
+            result = App.graphClient.users().byUserId(App.activeUser.getId()).authentication().qrCodePinMethod().
+                pin().patch(update);
+        } catch (ODataError e) {
+            JOptionPane.showMessageDialog(null, "Issues reseting PIN\n" + e.getMessage());
+        }
+
+        if (null != result) {
+            pane.removeAll();
+            drawPinDetailsPane(pane, result, pinLength);
+        }
+
+
     }
 
-    private static void drawPinDetailsPane(Container pane, QrPin qrPin) {
+    private static void drawPinDetailsPane(Container pane, QrPin qrPin, Integer pinLength) {
         JLabel label;
         JButton button;
 
@@ -1279,7 +1313,6 @@ public class MFAExtras {
 
         //title row
         label = new JLabel(labelPinDisplayTitle);
-        c.fill = GridBagConstraints.CENTER;
         c.weightx = 0.0;
         c.gridwidth = 2;
         c.gridx = 0;
@@ -1338,26 +1371,43 @@ public class MFAExtras {
         c.gridy = 5;
         pane.add(label, c);
 
+        //PIN view row
+        label = new JLabel(labelNewPin);
+        c.gridwidth = 1;
+        c.gridx = 0;
+        c.gridy = 6;
+        pane.add(label, c);
+
+        if(null != qrPin.getCode())
+            label = new JLabel(qrPin.getCode());
+        else
+            label = new JLabel("");
+        label.setToolTipText(stringPinToolTip);
+        c.gridwidth = 1;
+        c.gridx = 1;
+        c.gridy = 6;
+        pane.add(label, c);
+
         //reset PIN
-        button = new JButton("Reset PIN");
-        button.addActionListener(e -> resetQRCodePin());
+        button = new JButton(buttonResetPin);
+        button.addActionListener(e -> resetQRCodePin(pane, pinLength));
         //c.insets = insetsButton;
         c.gridwidth = 2;
         c.gridx = 0;
-        c.gridy = 6;
+        c.gridy = 8;
         pane.add(button, c);
     }
 
-    private static void drawCreateCodePane(Container pane, QrCodePinAuthenticationMethodConfiguration qrPolicy,
-        QrCodePinAuthenticationMethod qrCodeMethod) {
+    private static void drawCreateCodePane(Container pane) {
         
         QrPin qrPin = null;
 
-        if (null != qrCodeMethod) {
-            qrPin = qrCodeMethod.getPin();
+        if (null != App.qrCodeMethod) {
+            qrPin = App.qrCodeMethod.getPin();
         }
-        Integer pinLength = qrPolicy.getPinLength();
-        Integer defaultLifetime = qrPolicy.getStandardQRCodeLifetimeInDays();
+
+        Integer pinLength = App.qrPolicy.getPinLength();
+        Integer defaultLifetime = App.qrPolicy.getStandardQRCodeLifetimeInDays();
 
         JLabel label;
         JButton button;
@@ -1410,6 +1460,7 @@ public class MFAExtras {
             c.gridy = 1;
             pane.add(dateSpinner, c);
         }
+        // lifetime row for Temp Codes
         else {
             label = new JLabel(labelLifeTime);
             c.gridwidth = 1;
@@ -1428,6 +1479,7 @@ public class MFAExtras {
 
         //activate later row
         checkBox = new JCheckBox(labelActivateLater);
+        checkBox.setName(nameActivateLaterCheck);
         checkBox.addItemListener( e -> {
             if(e.getStateChange() == ItemEvent.SELECTED || e.getStateChange() == ItemEvent.DESELECTED) {
                 activateLater_Check(pane);
@@ -1438,7 +1490,7 @@ public class MFAExtras {
         c.gridy = 2;
         pane.add(checkBox, c);
 
-        //activate date row
+        //activate later date row
         label = new JLabel(labelActivationDate);
         label.setName(labelName);
         label.setVisible(false);
@@ -1451,7 +1503,7 @@ public class MFAExtras {
         Date minActDate = Date.from(OffsetDateTime.now().toInstant());
         Date maxActDate = Date.from(OffsetDateTime.now().plusDays(stdMaxLifeTime).toInstant());
         
-        dateSpinner = new JSpinner(new SpinnerDateModel(defaultActDate, minActDate, maxActDate,Calendar.MINUTE));
+        dateSpinner = new JSpinner(new SpinnerDateModel(defaultActDate, minActDate, maxActDate, Calendar.MINUTE));
         dateEditor = new JSpinner.DateEditor(dateSpinner, "MM-dd-yyyy HH:mm");
         dateSpinner.setEditor(dateEditor);
         dateSpinner.setName(dateSpinnerAct);
@@ -1487,6 +1539,9 @@ public class MFAExtras {
 
                 JFormattedTextField pinInput = new JFormattedTextField(numberFormatter);
                 pinInput.setToolTipText("Minimum PIN length is " + pinLength);
+                pinInput.setName(namePinInput);
+                pinInput.setSize(40, 10);
+                c.fill = GridBagConstraints.HORIZONTAL;
                 c.gridwidth = 1;
                 c.gridx = 1;
                 c.gridy = 4;
@@ -1500,6 +1555,8 @@ public class MFAExtras {
             button = new JButton(buttonCreateStd);
         else
             button = new JButton(buttonCreateTmp);
+        button.addActionListener(e -> createCode_Click((JTabbedPane)pane.getParent(), e));
+        c.fill = GridBagConstraints.CENTER;
         c.insets = insetsButton;
         c.gridwidth = 1;
         c.gridx = 1;
@@ -1553,23 +1610,43 @@ public class MFAExtras {
         c.gridy = 2;
         pane.add(label, c);
 
-        BufferedImage qrCode = null;
 
         if (null != code.getImage() && code.getImage().getBinaryValue() != null) {
+
+            BufferedImage qrCodeImg = null;
+
+            JOptionPane.showMessageDialog(null, code.getImage());
+            JOptionPane.showMessageDialog(null, code.getImage().getBinaryValue().toString());
+            String stringbase64 = code.getImage().getBinaryValue().toString();
+            //Base64 base64 = Base64.getDecoder().decode(stringbase64);
+
             try {
-                qrCode = ImageIO.read(new java.io.ByteArrayInputStream(code.getImage().getBinaryValue()));
-            } catch (Exception e) {
-                qrCode = null;
+                ByteArrayInputStream bis = new ByteArrayInputStream(code.getImage().getBinaryValue());
+                qrCodeImg = ImageIO.read(bis);
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(null,ex.getMessage());
             }
+            /*try {
+                qrCodeImg = ImageIO.read(new java.io.ByteArrayInputStream(code.getImage().getBinaryValue()));
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(null,e.getMessage());
+            }*/
 
-            label = new JLabel(new ImageIcon(qrCode));
-            c.gridheight = 3;
-            c.gridwidth = 1;
-            c.gridx = 2;
-            c.gridy = 3;
-            pane.add(label, c);
+            if (null != qrCodeImg)
+                label = new JLabel(new ImageIcon(qrCodeImg));
+            else
+                label = new JLabel("QR Code Here");
+            
         }
+        else 
+            label = new JLabel();
 
+        c.gridheight = 3;
+        c.gridwidth = 1;
+        c.gridx = 2;
+        c.gridy = 3;
+        pane.add(label, c);
+        
         //active datetime row
         label = new JLabel(labelActive);
         c.gridheight = 1;
@@ -1616,6 +1693,7 @@ public class MFAExtras {
         else
             button = new JButton(buttonDelTmp);
         //c.insets = insetsButton;
+        button.addActionListener(e -> deleteCode_Click(pane, isStandard));
         c.weighty = 0.0;
         c.gridwidth = 3;
         c.gridx = 0;
@@ -1635,6 +1713,175 @@ public class MFAExtras {
         }
 
         pane.repaint();
+    }
+
+    private static void createCode_Click(JTabbedPane tabbedpane, ActionEvent e) {
+       
+        Boolean actLater = false;
+        OffsetDateTime expDate = null;
+        OffsetDateTime actDate = OffsetDateTime.now();
+        Integer tmpLife = tmpLifeDefault;
+        String pinEntry = null;
+        QrCodePinAuthenticationMethod updatedMethod = null;
+        
+        QrCode newCode = null;
+        
+        Container pane = ((JButton)e.getSource()).getParent();
+
+        //update the cursor
+        pane.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+        //JOptionPane.showMessageDialog(null,e.getSource());
+
+        if(null != pane) {
+            //check if activate later is checked.
+            for(Component comp : pane.getComponents()) {
+                if (null != comp.getName() && comp.getName().equals(nameActivateLaterCheck)){
+                    actLater = ((JCheckBox)comp).isSelected();
+                    break;
+                }
+            }
+
+            //get the expiration date and activation date (if necessary) components
+            for(Component comp : pane.getComponents()) {
+                if(comp instanceof JSpinner) {
+                    if (null != comp.getName() && comp.getName().equals(dateSpinnerExp)){
+                        Date temp = (Date)((JSpinner)comp).getValue();
+                        expDate = OffsetDateTime.ofInstant(temp.toInstant(), java.time.ZoneId.systemDefault());
+                    } else if (null != comp.getName() && comp.getName().equals(dateSpinnerAct)
+                        && actLater) {
+                            Date temp = (Date)((JSpinner)comp).getValue();
+                            actDate = OffsetDateTime.ofInstant(temp.toInstant(), java.time.ZoneId.systemDefault());
+                    } else if (null != comp.getName() && comp.getName().equals(spinnerTmpLife)) {
+                        tmpLife = (Integer) ((JSpinner)comp).getValue();
+                    }
+                }
+                else if (comp instanceof JFormattedTextField)
+                    if (null != ((JFormattedTextField)comp).getValue())
+                        pinEntry = ((JFormattedTextField)comp).getValue().toString();
+            }
+
+            QrCodePinAuthenticationMethod newMethod = new QrCodePinAuthenticationMethod();
+            
+            newMethod.setTemporaryQRCode(new QrCode());
+            
+
+            //if we are coming from the standard code pane
+            if(pane.getName().equals(nameStdCodePane)) {
+                //at most, we will have 3 things to populate:
+                //  start/activation time (required)
+                //  expiration time (required)
+                //  pin (required on new activation)
+                
+                newMethod.setStandardQRCode(new QrCode());
+
+                //expiration date is required to fill out
+                newMethod.getStandardQRCode().setExpireDateTime(expDate);
+                //activation date is initially set to now, but could have been updated
+                newMethod.getStandardQRCode().setStartDateTime(actDate);
+                
+                //if pin entry is not null, we can add pin, otherwise we don't need to worry about it.
+                if(null != pinEntry) {
+                    newMethod.setPin(new QrPin());
+                    newMethod.getPin().setCode(pinEntry);
+                
+                    //try the request
+                    try {
+                        updatedMethod = (QrCodePinAuthenticationMethod)
+                            App.graphClient.users().byUserId(App.activeUser.getId()).authentication().methods().post(newMethod);
+                    } catch (ODataError ex) {
+                        JOptionPane.showMessageDialog(null, ex.getMessage());
+                    }
+                }
+                else {
+                    try {
+                        newCode = App.graphClient.users().byUserId(App.activeUser.getId()).authentication()
+                            .qrCodePinMethod().standardQRCode().patch(newMethod.getStandardQRCode());
+                    } catch (ODataError ex) {
+                        JOptionPane.showMessageDialog(null, ex.getMessage());
+                    }
+                }
+            }
+            //we are coming from the temporary code pane
+            if(pane.getName().equals(nameTmpCodePane)) {
+                //we have two things to set
+                //  expiration time is activation time + tmplifetime
+                //  activation time
+                newMethod.getTemporaryQRCode().setExpireDateTime(actDate.plusHours(tmpLife));
+                newMethod.getTemporaryQRCode().setStartDateTime(actDate);
+
+                //try the request
+                try {
+                    newCode = App.graphClient.users().byUserId(App.activeUser.getId()).authentication()
+                        .qrCodePinMethod().temporaryQRCode().patch(newMethod.getTemporaryQRCode());
+                } catch (ODataError ex) {
+                    JOptionPane.showMessageDialog(null, ex.getMessage());
+                }
+            }
+
+            //created a new code, update the whole window
+            if (null != App.qrPolicy && null != newMethod && null == newCode) {
+                JFrame frame = (JFrame)tabbedpane.getParent().getParent();
+                frame.removeAll();
+                fillQrCodeWindow(frame);
+            }
+            //only updated a code, so we'll just update that pane.
+            else if ((null != App.qrPolicy && null != newMethod && null != newCode)){
+                pane.removeAll();
+                drawDetailsCodePane(pane, false, newCode);
+                pane.repaint();
+            } else
+                JOptionPane.showMessageDialog(null, "Error creating window.");   
+        }
+
+        //all done, fix the cursor
+        pane.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+    }
+
+    private static void deleteCode_Click(Container pane, Boolean isStandard) {
+        //change the cursor while we wait
+        pane.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+        //delete the method
+        deleteQrCode(isStandard);
+
+        //redraw the pane
+        pane.removeAll();
+        drawCreateCodePane(pane);
+        pane.repaint();
+
+        //fix the cursor
+        pane.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+    }
+
+    private static void deleteQrCode(Boolean isStandard) {
+        //standard code
+        if(isStandard) {
+            try {
+                //delte the method
+                App.graphClient.users().byUserId(App.activeUser.getId()).authentication()
+                    .qrCodePinMethod().standardQRCode().delete();
+                //update the method
+                App.qrCodeMethod = App.graphClient.users().byUserId(App.activeUser.getId()).authentication()
+                    .qrCodePinMethod().get();
+            }
+            catch (ODataError ex) {
+                JOptionPane.showMessageDialog(null, "Error deleting method.");
+            }
+        } //temporary code
+        else {
+            try {
+                //delte the method
+                App.graphClient.users().byUserId(App.activeUser.getId()).authentication()
+                    .qrCodePinMethod().temporaryQRCode().delete();
+                //update the method
+                App.qrCodeMethod = App.graphClient.users().byUserId(App.activeUser.getId()).authentication()
+                    .qrCodePinMethod().get();
+            }
+            catch (ODataError ex) {
+                JOptionPane.showMessageDialog(null, "Error deleting method.");
+            }
+        }
     }
 }
 
