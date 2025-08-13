@@ -12,6 +12,7 @@ import com.microsoft.graph.beta.users.item.authentication.methods.item.resetpass
 import com.microsoft.graph.beta.models.odataerrors.*;
 //import java.sql.Date;
 import javax.swing.*;
+import java.time.Duration;
 
 //import org.checkerframework.checker.units.qual.C;
 
@@ -26,6 +27,8 @@ import java.awt.*;
 import java.util.List;
 import java.util.ArrayList;
 
+import com.azure.core.credential.AccessToken;
+import com.azure.core.credential.TokenRequestContext;
 //import com.microsoft.graph.authentication.TokenCredentialAuthProvider;
 import com.azure.identity.*;
 
@@ -38,6 +41,7 @@ public class App {
     static GraphServiceClient graphClient;
     static JTextArea outputArea = null;
     static JTextArea userInfoArea = null;
+    static AccessToken accessToken = null;
     static QrCodePinAuthenticationMethodConfiguration qrPolicy = null;
     static QrCodePinAuthenticationMethod qrCodeMethod = null;
     final static String clientId = "492bc3cf-c421-4332-9e96-f56547f3ed56";
@@ -361,13 +365,18 @@ public class App {
         InteractiveBrowserCredential token = new InteractiveBrowserCredentialBuilder().clientId(clientId)
             .tenantId(tenantId).redirectUrl("http://localhost").build();
 
+        TokenRequestContext requestContext = new TokenRequestContext()
+            .addScopes("https://graph.microsoft.com/.default");
+
+        accessToken = token.getToken(requestContext).block(Duration.ofSeconds(30));
+
         graphClient = new GraphServiceClient(token, scopes);
         try {
             me = graphClient.me().get();
             isSignedIn = true;
             admin = me;
         } catch (ODataError ex) {
-            System.out.println("Error getting user: " + ex.getMessage());
+            System.out.println("Error getting admin: " + ex.getMessage());
         }
 
         if (isSignedIn)
@@ -1058,25 +1067,32 @@ public class App {
             else {
                 //2. Modify the form to show the options based on the policy
                 //3. Get the input from the user
-
+                QrCodePinAuthenticationMethod newCode = null;
                 try {
-                    qrCodeMethod = graphClient.users().byUserId(activeUser.getId())
+                    newCode = graphClient.users().byUserId(activeUser.getId())
                         .authentication().qrCodePinMethod().get();
                 } catch (ODataError e){
                     if(404 != e.getResponseStatusCode())
                         JOptionPane.showMessageDialog(null, e.getMessage());
+                    else
+                        newCode = new QrCodePinAuthenticationMethod();
                 }
 
-                JFrame qrCodeFrame = new JFrame();
-                qrCodeFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-                qrCodeFrame.setSize(600,250);
-                qrCodeFrame.setLocation(frame.getLocationOnScreen());
-                qrCodeFrame.setLayout(new GridLayout(1,1));
-                qrCodeFrame.setTitle(windowTitle);
+                if(null != newCode) {
+                    qrCodeMethod = newCode;
+                    JFrame qrCodeFrame = new JFrame();
+                    qrCodeFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+                    qrCodeFrame.setSize(600,250);
+                    qrCodeFrame.setLocation(frame.getLocationOnScreen());
+                    qrCodeFrame.setLayout(new GridLayout(1,1));
+                    qrCodeFrame.setTitle(windowTitle);
 
-                MFAExtras.fillQrCodeWindow(qrCodeFrame);
+                    MFAExtras.fillQrCodeWindow(qrCodeFrame);
 
-                qrCodeFrame.setVisible(true);
+                    qrCodeFrame.setVisible(true);
+                }
+                else
+                    JOptionPane.showMessageDialog(null,"Error creating window.");
             }
 
             frame.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));

@@ -32,6 +32,17 @@ dependencies {
     // This dependency is only needed if you are using a TokenCredential object for authentication
     implementation 'com.azure:azure-identity:1.15.0'
 
+    // Apache Batik core SVG rendering libraries
+    implementation 'org.apache.xmlgraphics:batik-transcoder:1.17'
+    implementation 'org.apache.xmlgraphics:batik-codec:1.17'
+    implementation 'org.apache.xmlgraphics:batik-dom:1.17'
+    implementation 'org.apache.xmlgraphics:batik-svggen:1.17'
+    implementation 'org.apache.xmlgraphics:batik-awt-util:1.17'
+    implementation 'org.apache.xmlgraphics:batik-util:1.17'
+    implementation 'org.apache.xmlgraphics:batik-bridge:1.17'
+    implementation 'org.apache.xmlgraphics:batik-gvt:1.17'
+    implementation 'org.apache.xmlgraphics:batik-parser:1.17'
+
     //implementation 'com.google.guava:guava:23.0'
 }
 

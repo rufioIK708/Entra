@@ -1,15 +1,37 @@
 package entra;
 
+//for svg processing
+import org.apache.batik.transcoder.TranscoderInput;
+import org.apache.batik.transcoder.TranscoderOutput;
+import org.apache.batik.transcoder.image.PNGTranscoder;
+
+//for general image processing
+import java.awt.image.BufferedImage;
+import java.io.StringReader;
+import java.io.ByteArrayOutputStream;
+import javax.imageio.ImageIO;
+
+//mouse events
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
+import javax.swing.JPopupMenu;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
 import javax.swing.JCheckBox;
+import javax.swing.JFileChooser;
 import javax.swing.JSpinner;
 import javax.swing.JTabbedPane;
 import javax.swing.SpinnerDateModel;
 import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingUtilities;
 import javax.swing.JButton;
 import javax.swing.JRadioButtonMenuItem;
 import javax.swing.ButtonGroup;
@@ -24,7 +46,9 @@ import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.StringReader;
 import java.text.NumberFormat;
 import java.time.OffsetDateTime;
 //import java.time.ZoneId;
@@ -1499,8 +1523,8 @@ public class MFAExtras {
         c.gridy = 3;
         pane.add(label, c);
 
-        Date defaultActDate = Date.from(OffsetDateTime.now().toInstant());
         Date minActDate = Date.from(OffsetDateTime.now().toInstant());
+        Date defaultActDate = Date.from(OffsetDateTime.now().toInstant());
         Date maxActDate = Date.from(OffsetDateTime.now().plusDays(stdMaxLifeTime).toInstant());
         
         dateSpinner = new JSpinner(new SpinnerDateModel(defaultActDate, minActDate, maxActDate, Calendar.MINUTE));
@@ -1570,137 +1594,180 @@ public class MFAExtras {
         JButton button;
         GridBagConstraints c = new GridBagConstraints();
 
-        // title row
-        if(isStandard) {
-            label = new JLabel(labelStdDisplayTitle);
+        if( null != code) {
+            // title row
+            if(isStandard) {
+                label = new JLabel(labelStdDisplayTitle);
+                c.gridwidth = 1;
+                c.gridx = 1;
+            } else {
+                label = new JLabel(labelTmpDisplayTitle);
+                c.gridwidth = 2;
+                c.gridx = 0;
+            }
+            c.weighty = 0.5;
+            c.gridy = 0;
+            pane.add(label, c);
+
+            //ID row
+            label = new JLabel(labelId);
+            c.gridwidth = 1;
+            c.gridx = 0;
+            c.gridy = 1;
+            pane.add(label, c);
+
+            label = new JLabel(code.getId().toString());
             c.gridwidth = 1;
             c.gridx = 1;
-        } else {
-            label = new JLabel(labelTmpDisplayTitle);
-            c.gridwidth = 2;
+            c.gridy = 1;
+            pane.add(label, c);
+
+            //created row
+            label = new JLabel(labelCreated);
+            c.gridwidth = 1;
             c.gridx = 0;
-        }
-        c.weighty = 0.5;
-        c.gridy = 0;
-        pane.add(label, c);
+            c.gridy = 2;
+            pane.add(label, c);
 
-        //ID row
-        label = new JLabel(labelId);
-        c.gridwidth = 1;
-        c.gridx = 0;
-        c.gridy = 1;
-        pane.add(label, c);
-
-        label = new JLabel(code.getId().toString());
-        c.gridwidth = 1;
-        c.gridx = 1;
-        c.gridy = 1;
-        pane.add(label, c);
-
-        //created row
-        label = new JLabel(labelCreated);
-        c.gridwidth = 1;
-        c.gridx = 0;
-        c.gridy = 2;
-        pane.add(label, c);
-
-        label = new JLabel(code.getCreatedDateTime().toLocalDateTime().toString());
-        c.gridwidth = 1;
-        c.gridx = 1;
-        c.gridy = 2;
-        pane.add(label, c);
+            label = new JLabel(code.getCreatedDateTime().toLocalDateTime().toString());
+            c.gridwidth = 1;
+            c.gridx = 1;
+            c.gridy = 2;
+            pane.add(label, c);
 
 
-        if (null != code.getImage() && code.getImage().getBinaryValue() != null) {
+            if (null != code.getImage() && null != code.getImage().getBinaryValue()) {
 
-            BufferedImage qrCodeImg = null;
+                byte[] svgBytes = code.getImage().getBinaryValue();
+                String svgXml = new String(svgBytes, java.nio.charset.StandardCharsets.UTF_8).trim();
+                BufferedImage qrCodeImg = createImageFromSvgString(svgXml);
 
-            JOptionPane.showMessageDialog(null, code.getImage());
-            JOptionPane.showMessageDialog(null, code.getImage().getBinaryValue().toString());
-            String stringbase64 = code.getImage().getBinaryValue().toString();
-            //Base64 base64 = Base64.getDecoder().decode(stringbase64);
+                if (null != qrCodeImg) {
+                    label = new JLabel(new ImageIcon(qrCodeImg));
 
-            try {
-                ByteArrayInputStream bis = new ByteArrayInputStream(code.getImage().getBinaryValue());
-                qrCodeImg = ImageIO.read(bis);
-            } catch (IOException ex) {
-                JOptionPane.showMessageDialog(null,ex.getMessage());
+                    // Add right-click save functionality
+                    label.setToolTipText("You can right-click to save the code.");
+                    label.addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mousePressed(MouseEvent e) {
+                        if (e.isPopupTrigger()) showMenu(e);
+                    }
+                    @Override
+                    public void mouseReleased(MouseEvent e) {
+                        if (e.isPopupTrigger()) showMenu(e);
+                    }
+                    private void showMenu(MouseEvent e) {
+                        JPopupMenu menu = new JPopupMenu();
+                        JMenuItem saveItem = new JMenuItem(" Save Image...");
+                        saveItem.addActionListener(ev -> {
+                            ImageIcon icon = (ImageIcon) ((JLabel) e.getComponent()).getIcon();
+                            if (icon != null && icon.getImage() instanceof BufferedImage) {
+                                JFileChooser chooser = new JFileChooser();
+                                if (chooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
+                                    try {
+                                        java.io.File file = chooser.getSelectedFile();
+                                        ImageIO.write((BufferedImage) icon.getImage(), "png", file);
+                                    } catch (IOException ex) {
+                                        JOptionPane.showMessageDialog(null, "Failed to save image: " + ex.getMessage());
+                                    }
+                                }
+                            }
+                        });
+                        menu.add(saveItem);
+                        menu.show(e.getComponent(), e.getX(), e.getY());
+                        }
+                    });
+
+                }
+                else
+                    label = new JLabel("Unable to display QR Code Here");   
             }
-            /*try {
-                qrCodeImg = ImageIO.read(new java.io.ByteArrayInputStream(code.getImage().getBinaryValue()));
-            } catch (Exception e) {
-                JOptionPane.showMessageDialog(null,e.getMessage());
-            }*/
+            else 
+                label = new JLabel();
 
-            if (null != qrCodeImg)
-                label = new JLabel(new ImageIcon(qrCodeImg));
-            else
-                label = new JLabel("QR Code Here");
-            
-        }
-        else 
-            label = new JLabel();
-
-        c.gridheight = 3;
-        c.gridwidth = 1;
-        c.gridx = 2;
-        c.gridy = 3;
-        pane.add(label, c);
-        
-        //active datetime row
-        label = new JLabel(labelActive);
-        c.gridheight = 1;
-        c.gridwidth = 1;
-        c.gridx = 0;
-        c.gridy = 4;
-        pane.add(label, c);
-
-        label = new JLabel(code.getStartDateTime().toString());
-        c.gridwidth = 1;
-        c.gridx = 1;
-        c.gridy = 4;
-        pane.add(label, c);
-
-        //expires datetime row
-        label = new JLabel(labelExpires);
-        c.weighty = 0.0;
-        c.gridwidth = 1;
-        c.gridx = 0;
-        c.gridy = 5;
-        pane.add(label, c);
-
-        label = new JLabel(code.getExpireDateTime().toString());
-        c.gridwidth = 1;
-        c.gridx = 1;
-        c.gridy = 5;
-        pane.add(label, c);
-        
-        // if this is a standard method, show the change expiration button
-        if (isStandard) {
-            button = new JButton(buttonChangeExp);
+            c.gridheight = 4;
             c.gridwidth = 1;
             c.gridx = 2;
+            c.gridy = 3;
+            pane.add(label, c);
+            
+            //active datetime row
+            label = new JLabel(labelActive);
+            c.gridheight = 1;
+            c.gridwidth = 1;
+            c.gridx = 0;
+            c.gridy = 4;
+            pane.add(label, c);
+
+            label = new JLabel(code.getStartDateTime().toLocalDateTime().toString());
+            c.gridwidth = 1;
+            c.gridx = 1;
+            c.gridy = 4;
+            pane.add(label, c);
+
+            //expires datetime row
+            label = new JLabel(labelExpires);
+            c.weighty = 0.0;
+            c.gridwidth = 1;
+            c.gridx = 0;
             c.gridy = 5;
+            pane.add(label, c);
+
+            label = new JLabel(code.getExpireDateTime().toLocalDateTime().toString());
+            c.gridwidth = 1;
+            c.gridx = 1;
+            c.gridy = 5;
+            pane.add(label, c);
+            
+            // if this is a standard method, show the change expiration button
+            if (isStandard) {
+                button = new JButton(buttonChangeExp);
+                c.gridwidth = 1;
+                c.gridx = 2;
+                c.gridy = 5;
+                pane.add(button, c);
+            }
+
+            label = new JLabel(labelLastUsed);
+            label = new JLabel(code.getLastUsedDateTime().toLocalDateTime().toString());
+
+            // Delete button
+            if (isStandard) 
+                button = new JButton(buttonDelStd);
+            else
+                button = new JButton(buttonDelTmp);
+            //c.insets = insetsButton;
+            button.addActionListener(e -> deleteCode_Click(pane, isStandard));
+            c.weighty = 0.0;
+            c.gridwidth = 3;
+            c.gridx = 0;
+            c.gridy = 8;
             pane.add(button, c);
         }
-
-        label = new JLabel(labelLastUsed);
-        label = new JLabel(code.getLastUsedDateTime().toString());
-
-        // Delete button
-        if (isStandard) 
-            button = new JButton(buttonDelStd);
         else
-            button = new JButton(buttonDelTmp);
-        //c.insets = insetsButton;
-        button.addActionListener(e -> deleteCode_Click(pane, isStandard));
-        c.weighty = 0.0;
-        c.gridwidth = 3;
-        c.gridx = 0;
-        c.gridy = 8;
-        pane.add(button, c);
+            JOptionPane.showMessageDialog(null, "Error creating pane for tab: " + pane.getName());
     }
 
+    public static BufferedImage createImageFromSvgString(String source) {
+        BufferedImage qrCodeImg = null;
+        
+        try {
+            PNGTranscoder transcoder = new PNGTranscoder();
+            TranscoderInput input = new TranscoderInput(new StringReader(source));
+            ByteArrayOutputStream pngOutputStream = new ByteArrayOutputStream();
+            TranscoderOutput output = new TranscoderOutput(pngOutputStream);
+
+            transcoder.transcode(input, output);
+
+            byte[] pngData = pngOutputStream.toByteArray();
+            qrCodeImg = ImageIO.read(new ByteArrayInputStream(pngData));
+
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(null, "Failed to render SVG QR code: " + ex.getMessage());
+        }
+
+        return qrCodeImg;
+    }
     public static void activateLater_Check(Container pane) {
         for (Component comp : pane.getComponents()) {
             if (null == comp.getName())
@@ -1722,11 +1789,16 @@ public class MFAExtras {
         OffsetDateTime actDate = OffsetDateTime.now();
         Integer tmpLife = tmpLifeDefault;
         String pinEntry = null;
-        QrCodePinAuthenticationMethod updatedMethod = null;
         
         QrCode newCode = null;
         
         Container pane = ((JButton)e.getSource()).getParent();
+        Window window = SwingUtilities.getWindowAncestor((JButton)e.getSource());
+        JFrame frame = null;
+
+        if(window instanceof JFrame) {
+            frame = (JFrame)window;
+        }
 
         //update the cursor
         pane.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
@@ -1763,9 +1835,6 @@ public class MFAExtras {
 
             QrCodePinAuthenticationMethod newMethod = new QrCodePinAuthenticationMethod();
             
-            newMethod.setTemporaryQRCode(new QrCode());
-            
-
             //if we are coming from the standard code pane
             if(pane.getName().equals(nameStdCodePane)) {
                 //at most, we will have 3 things to populate:
@@ -1783,16 +1852,35 @@ public class MFAExtras {
                 //if pin entry is not null, we can add pin, otherwise we don't need to worry about it.
                 if(null != pinEntry) {
                     newMethod.setPin(new QrPin());
-                    newMethod.getPin().setCode(pinEntry);
-                
-                    //try the request
-                    try {
-                        updatedMethod = (QrCodePinAuthenticationMethod)
-                            App.graphClient.users().byUserId(App.activeUser.getId()).authentication().methods().post(newMethod);
-                    } catch (ODataError ex) {
-                        JOptionPane.showMessageDialog(null, ex.getMessage());
+
+                    if(pinEntry.isEmpty() || pinEntry.length() >= App.qrPolicy.getPinLength()) {
+                    
+                        newMethod.getPin().setCode(pinEntry);
+                    
+                        //try the request
+                        try {
+                            App.qrCodeMethod = graphCalls.createQrCodeMethod(newMethod);
+                        } catch (IOException ex) {
+                            JOptionPane.showMessageDialog(null, ex.getMessage());
+                        } catch (InterruptedException ex) {
+                            JOptionPane.showMessageDialog(null, ex.getMessage());
+                        }
+
+                        if (null != frame) {
+                            frame.removeAll();
+                            fillQrCodeWindow(frame);
+                            frame.repaint();
+                        }
+                        else {
+                            JOptionPane.showMessageDialog(null, "Critical Error");
+                        }
+                    }
+                    else {
+                        String message = "PIN is required to be legnth of " + App.qrPolicy.getPinLength();
+                        JOptionPane.showMessageDialog(null, message);
                     }
                 }
+                //PIN is null so it wasn't created, we are just updating the standard code
                 else {
                     try {
                         newCode = App.graphClient.users().byUserId(App.activeUser.getId()).authentication()
@@ -1800,10 +1888,15 @@ public class MFAExtras {
                     } catch (ODataError ex) {
                         JOptionPane.showMessageDialog(null, ex.getMessage());
                     }
+
+                    pane.removeAll();
+                    drawDetailsCodePane(pane, true, newCode);
+                    pane.repaint();
                 }
             }
             //we are coming from the temporary code pane
-            if(pane.getName().equals(nameTmpCodePane)) {
+            else if(pane.getName().equals(nameTmpCodePane)) {
+                newMethod.setTemporaryQRCode(new QrCode());
                 //we have two things to set
                 //  expiration time is activation time + tmplifetime
                 //  activation time
@@ -1817,21 +1910,14 @@ public class MFAExtras {
                 } catch (ODataError ex) {
                     JOptionPane.showMessageDialog(null, ex.getMessage());
                 }
-            }
 
-            //created a new code, update the whole window
-            if (null != App.qrPolicy && null != newMethod && null == newCode) {
-                JFrame frame = (JFrame)tabbedpane.getParent().getParent();
-                frame.removeAll();
-                fillQrCodeWindow(frame);
-            }
-            //only updated a code, so we'll just update that pane.
-            else if ((null != App.qrPolicy && null != newMethod && null != newCode)){
                 pane.removeAll();
                 drawDetailsCodePane(pane, false, newCode);
                 pane.repaint();
-            } else
-                JOptionPane.showMessageDialog(null, "Error creating window.");   
+            }
+            // we are only ever going to pass either tmpCodePane or stdCodePane, this shouldn't be reachable.
+            else
+                JOptionPane.showMessageDialog(null, "Error updating window.");   
         }
 
         //all done, fix the cursor
