@@ -38,17 +38,18 @@ import javax.swing.ButtonGroup;
 import javax.swing.JTextField;
 import javax.swing.JFormattedTextField;
 import javax.swing.text.NumberFormatter;
-import javax.imageio.ImageIO;
+import javax.swing.JPanel;
+
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
-import java.awt.image.BufferedImage;
+
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
+
 import java.io.IOException;
-import java.io.StringReader;
+
 import java.text.NumberFormat;
 import java.time.OffsetDateTime;
 //import java.time.ZoneId;
@@ -59,6 +60,7 @@ import java.util.Map;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Calendar;
+import java.util.Random;
 
 import com.microsoft.graph.beta.models.*;
 //import com.microsoft.graph.beta.models.ExternalAuthenticationType;
@@ -117,7 +119,7 @@ public class MFAExtras {
         static final String nameActivateLaterCheck = "ActivateLaterCheck";
         static final String StdCodePane = "Standard QR Code";
         static final String TmpCodePane = "Temporary QR Code";
-        static final String PinCodePane = "PIN";
+        static final String PinCodePane = "PIN Details";
         static final String labelEnterPin = "Enter PIN";
         static final String dateSpinnerAct = "dateSpinnerAct";
         static final String dateSpinnerExp = "dateSpinnerExp";
@@ -1331,6 +1333,7 @@ public class MFAExtras {
     private static void drawPinDetailsPane(Container pane, QrPin qrPin, Integer pinLength) {
         JLabel label;
         JButton button;
+        JTextField value;
 
         GridBagConstraints c = new GridBagConstraints();
         c.fill = GridBagConstraints.CENTER;
@@ -1426,7 +1429,7 @@ public class MFAExtras {
         
         QrPin qrPin = null;
 
-        if (null != App.qrCodeMethod) {
+        if (null != App.qrCodeMethod && null != App.qrCodeMethod.getPin()) {
             qrPin = App.qrCodeMethod.getPin();
         }
 
@@ -1473,7 +1476,7 @@ public class MFAExtras {
             Date maxExpDate = Date.from(OffsetDateTime.now().plusDays(stdMaxLifeTime).toInstant());
 
             spinnerModel = new SpinnerDateModel(defaultExpDate, minExpDate,
-            maxExpDate, java.util.Calendar.MINUTE);
+                maxExpDate, java.util.Calendar.MINUTE);
             dateSpinner = new JSpinner(spinnerModel);
             dateEditor = new JSpinner.DateEditor(dateSpinner, "MM-dd-yyyy HH:mm");
             dateSpinner.setEditor(dateEditor);
@@ -1527,7 +1530,7 @@ public class MFAExtras {
         Date defaultActDate = Date.from(OffsetDateTime.now().toInstant());
         Date maxActDate = Date.from(OffsetDateTime.now().plusDays(stdMaxLifeTime).toInstant());
         
-        dateSpinner = new JSpinner(new SpinnerDateModel(defaultActDate, minActDate, maxActDate, Calendar.MINUTE));
+        dateSpinner = new JSpinner(new SpinnerDateModel(defaultActDate, minActDate, maxActDate, java.util.Calendar.MINUTE));
         dateEditor = new JSpinner.DateEditor(dateSpinner, "MM-dd-yyyy HH:mm");
         dateSpinner.setEditor(dateEditor);
         dateSpinner.setName(dateSpinnerAct);
@@ -1605,36 +1608,9 @@ public class MFAExtras {
                 c.gridwidth = 2;
                 c.gridx = 0;
             }
-            c.weighty = 0.5;
+            c.weighty = 1;
             c.gridy = 0;
             pane.add(label, c);
-
-            //ID row
-            label = new JLabel(labelId);
-            c.gridwidth = 1;
-            c.gridx = 0;
-            c.gridy = 1;
-            pane.add(label, c);
-
-            label = new JLabel(code.getId().toString());
-            c.gridwidth = 1;
-            c.gridx = 1;
-            c.gridy = 1;
-            pane.add(label, c);
-
-            //created row
-            label = new JLabel(labelCreated);
-            c.gridwidth = 1;
-            c.gridx = 0;
-            c.gridy = 2;
-            pane.add(label, c);
-
-            label = new JLabel(code.getCreatedDateTime().toLocalDateTime().toString());
-            c.gridwidth = 1;
-            c.gridx = 1;
-            c.gridy = 2;
-            pane.add(label, c);
-
 
             if (null != code.getImage() && null != code.getImage().getBinaryValue()) {
 
@@ -1685,10 +1661,39 @@ public class MFAExtras {
             else 
                 label = new JLabel();
 
-            c.gridheight = 4;
+            c.gridheight = 5;
+            c.weighty = 0;
             c.gridwidth = 1;
             c.gridx = 2;
-            c.gridy = 3;
+            c.gridy = 0;
+            pane.add(label, c);
+
+            //ID row
+            label = new JLabel(labelId);
+            c.gridheight = 1;
+            c.gridwidth = 1;
+            c.weighty = 0.5;
+            c.gridx = 0;
+            c.gridy = 1;
+            pane.add(label, c);
+
+            label = new JLabel(code.getId().toString());
+            c.gridwidth = 1;
+            c.gridx = 1;
+            c.gridy = 1;
+            pane.add(label, c);
+
+            //created row
+            label = new JLabel(labelCreated);
+            c.gridwidth = 1;
+            c.gridx = 0;
+            c.gridy = 2;
+            pane.add(label, c);
+
+            label = new JLabel(code.getCreatedDateTime().toLocalDateTime().toString());
+            c.gridwidth = 1;
+            c.gridx = 1;
+            c.gridy = 2;
             pane.add(label, c);
             
             //active datetime row
@@ -1775,6 +1780,7 @@ public class MFAExtras {
             else {//getName() resolves 
                 if ( comp.getName().equals(labelName) || comp.getName().equals(dateSpinnerAct)) {
                     comp.setVisible(!comp.isVisible());
+                    comp.setEnabled(true);
                 }
             }
         }
@@ -1793,7 +1799,7 @@ public class MFAExtras {
         QrCode newCode = null;
         
         Container pane = ((JButton)e.getSource()).getParent();
-        Window window = SwingUtilities.getWindowAncestor((JButton)e.getSource());
+        Window window = SwingUtilities.getWindowAncestor(pane);
         JFrame frame = null;
 
         if(window instanceof JFrame) {
@@ -1853,32 +1859,38 @@ public class MFAExtras {
                 if(null != pinEntry) {
                     newMethod.setPin(new QrPin());
 
-                    if(pinEntry.isEmpty() || pinEntry.length() >= App.qrPolicy.getPinLength()) {
-                    
+                    if(pinEntry.length() >= App.qrPolicy.getPinLength()) 
                         newMethod.getPin().setCode(pinEntry);
-                    
-                        //try the request
-                        try {
-                            App.qrCodeMethod = graphCalls.createQrCodeMethod(newMethod);
-                        } catch (IOException ex) {
-                            JOptionPane.showMessageDialog(null, ex.getMessage());
-                        } catch (InterruptedException ex) {
-                            JOptionPane.showMessageDialog(null, ex.getMessage());
-                        }
+                    else if(pinEntry.isEmpty()) {
+                        Random random = new Random();
+                        newMethod.getPin().setCode(Integer.toString(random.nextInt(99999998) + 1));
+                    }
+                    //try the request
+                    if(null != newMethod.getPin().getCode()) {
+                    try {
+                        App.qrCodeMethod = graphCalls.createQrCodeMethod(newMethod);
+                    } catch (IOException ex) {
+                        JOptionPane.showMessageDialog(null, ex.getMessage());
+                    } catch (InterruptedException ex) {
+                        JOptionPane.showMessageDialog(null, ex.getMessage());
+                    }
 
-                        if (null != frame) {
-                            frame.removeAll();
-                            fillQrCodeWindow(frame);
-                            frame.repaint();
-                        }
-                        else {
-                            JOptionPane.showMessageDialog(null, "Critical Error");
-                        }
+                    if (null != frame) {
+                        //frame.removeAll();
+                        tabbedpane.removeAll();
+                        frame.remove(tabbedpane);
+                        fillQrCodeWindow(frame);
+                        frame.repaint();
+                        frame.revalidate();
                     }
                     else {
-                        String message = "PIN is required to be legnth of " + App.qrPolicy.getPinLength();
-                        JOptionPane.showMessageDialog(null, message);
+                        JOptionPane.showMessageDialog(null, "Critical Error");
                     }
+                }
+                else {
+                    String message = "PIN is required to be legnth of " + App.qrPolicy.getPinLength();
+                    JOptionPane.showMessageDialog(null, message);
+                }
                 }
                 //PIN is null so it wasn't created, we are just updating the standard code
                 else {
@@ -1892,6 +1904,7 @@ public class MFAExtras {
                     pane.removeAll();
                     drawDetailsCodePane(pane, true, newCode);
                     pane.repaint();
+                    pane.revalidate();
                 }
             }
             //we are coming from the temporary code pane
@@ -1914,6 +1927,7 @@ public class MFAExtras {
                 pane.removeAll();
                 drawDetailsCodePane(pane, false, newCode);
                 pane.repaint();
+                pane.revalidate();
             }
             // we are only ever going to pass either tmpCodePane or stdCodePane, this shouldn't be reachable.
             else
@@ -1928,7 +1942,7 @@ public class MFAExtras {
         //change the cursor while we wait
         pane.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
-        //delete the method
+        //delete the method();
         deleteQrCode(isStandard);
 
         //redraw the pane

@@ -5,11 +5,13 @@ package entra;
 //import com.microsoft.graph.beta.*;
 import com.microsoft.graph.beta.models.*;
 import com.microsoft.graph.beta.serviceclient.*;
+
 //import com.microsoft.graph.beta.identity.*;
 //import com.microsoft.graph.core.*;
 //import com.microsoft.graph.beta.users.item.authentication.fido2methods.creationoptionswithchallengetimeoutinminutes.CreationOptionsWithChallengeTimeoutInMinutesRequestBuilder;
 import com.microsoft.graph.beta.users.item.authentication.methods.item.resetpassword.*;
 import com.microsoft.graph.beta.models.odataerrors.*;
+
 //import java.sql.Date;
 import javax.swing.*;
 import java.time.Duration;
@@ -18,8 +20,8 @@ import java.time.Duration;
 
 import javax.smartcardio.*;
 
-
 import java.awt.*;
+import java.security.AuthProvider;
 //import java.time.OffsetDateTime;
 //import java.time.ZonedDateTime;
 //import java.util.Date;
@@ -29,19 +31,22 @@ import java.util.ArrayList;
 
 import com.azure.core.credential.AccessToken;
 import com.azure.core.credential.TokenRequestContext;
+import com.azure.core.credential.TokenCredential;
 //import com.microsoft.graph.authentication.TokenCredentialAuthProvider;
 import com.azure.identity.*;
 
 
 public class App {
 
-    static boolean isSignedIn = false;
+    static Boolean isSignedIn = false;
     static User admin;
     static User activeUser;
     static GraphServiceClient graphClient;
+    static InteractiveBrowserCredential token;
     static JTextArea outputArea = null;
     static JTextArea userInfoArea = null;
     static AccessToken accessToken = null;
+    static TokenRequestContext requestContext = null;
     static QrCodePinAuthenticationMethodConfiguration qrPolicy = null;
     static QrCodePinAuthenticationMethod qrCodeMethod = null;
     final static String clientId = "492bc3cf-c421-4332-9e96-f56547f3ed56";
@@ -348,6 +353,8 @@ public class App {
         admin = null;
         activeUser = null;
         graphClient = null;
+        token = null;
+        
 
         createSignInButton(frame);
 
@@ -362,15 +369,15 @@ public class App {
 
         User me = new User();
 
-        InteractiveBrowserCredential token = new InteractiveBrowserCredentialBuilder().clientId(clientId)
+        token = new InteractiveBrowserCredentialBuilder().clientId(clientId)
             .tenantId(tenantId).redirectUrl("http://localhost").build();
 
-        TokenRequestContext requestContext = new TokenRequestContext()
+        requestContext = new TokenRequestContext()
             .addScopes("https://graph.microsoft.com/.default");
-
-        accessToken = token.getToken(requestContext).block(Duration.ofSeconds(30));
-
-        graphClient = new GraphServiceClient(token, scopes);
+        
+        if(null == graphClient)
+            graphClient = new GraphServiceClient(token, scopes);
+           
         try {
             me = graphClient.me().get();
             isSignedIn = true;
@@ -407,7 +414,8 @@ public class App {
         {
             JOptionPane.showMessageDialog(frame, "Sign in failed. Please try again.");
         }
-
+        
+       
         
     }
 
@@ -1082,13 +1090,19 @@ public class App {
                     qrCodeMethod = newCode;
                     JFrame qrCodeFrame = new JFrame();
                     qrCodeFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-                    qrCodeFrame.setSize(600,250);
+                    qrCodeFrame.setSize(600,300);
                     qrCodeFrame.setLocation(frame.getLocationOnScreen());
                     qrCodeFrame.setLayout(new GridLayout(1,1));
                     qrCodeFrame.setTitle(windowTitle);
-
+                    qrCodeFrame.addWindowListener(new java.awt.event.WindowAdapter() {
+                        @Override
+                        public void windowClosing(java.awt.event.WindowEvent windowEvent) {
+                            frame.setEnabled(true);
+                        }
+                    });
                     MFAExtras.fillQrCodeWindow(qrCodeFrame);
 
+                    frame.setEnabled(false);
                     qrCodeFrame.setVisible(true);
                 }
                 else
