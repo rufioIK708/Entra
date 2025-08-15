@@ -88,6 +88,29 @@ public class MFAExtras {
     final static String defaultVoiceOffice = "voiceOffice";
     final static String defaultVoiceAltMobile = "voiceAlternateMobile";
 
+    static public enum PhoneType {
+        OFFICE("office"),
+        MOBILE("mobile"),
+        ALTMOBILE("altMobile");
+
+        private final String description;
+
+        //Constructor
+        PhoneType(String description) {
+            this.description = description;
+        }
+
+        //Getter
+        public String getDescription() {
+            return description;
+        }
+    } 
+
+    static public enum MethodType {
+        EMAIL,
+        PHONE
+    } 
+
     //set strings
         static final String messageStdCodeExists = "You have an existing Standard QR Code method";
         static final String messageStdCodeNew = "You need to create a new Standard QR Code method";
@@ -95,12 +118,12 @@ public class MFAExtras {
         static final String messagePinNoStd = "You must configure a standard code in order to view/reset PIN information.\n" +
             "If this user has a standard QR code, then it needs to be deleted so you can create a new PIN.";
         //static final String windowTitle = "QR Code Authentication";
-        static final String labelLifeTime = "LifeTime in hours : ";
-        static final String labelLastUsed = "Last Used DateTime : ";
-        static final String labelCreated = "Created DateTime : ";
-        static final String labelActive = "Active DateTime : ";
+        static final String labelLifeTime = "LifeTime in hours   : ";
+        static final String labelLastUsed = "Last Used DateTime  : ";
+        static final String labelCreated = "Created DateTime    : ";
+        static final String labelActive = "Active DateTime     : ";
         static final String labelExpires = "Expiration DateTime : ";
-        static final String labelUpdated = "Updated DateTime : ";
+        static final String labelUpdated = "Updated DateTime    : ";
         static final String labelId = "Id : ";
         static final String labelStdDisplayTitle = "Standard QR Code Details";
         static final String labelTmpDisplayTitle = "Temporary QR Code Details";
@@ -116,6 +139,12 @@ public class MFAExtras {
         static final String nameTmpCodePane = "TmpPane";
         static final String namePinPane = "PINPane";
         static final String namePinInput = "PinInput";
+        static final String nameAddMfaInputText = "inputText";
+        static final String nameAddMfaRadioPhoneButton = "radioPhoneButton";
+        static final String nameAddMfaRadioMobileButton = "radioMobilePhoneButton";
+        static final String nameAddMfaRadioAltMobileButton = "radioAltMobilePhoneButton";
+        static final String nameAddMfaRadioOfficeButton = "radioOfficeButton";
+        static final String nameAddMfaRadioEmailButton = "radioEmailButton";
         static final String nameActivateLaterCheck = "ActivateLaterCheck";
         static final String StdCodePane = "Standard QR Code";
         static final String TmpCodePane = "Temporary QR Code";
@@ -895,15 +924,21 @@ public class MFAExtras {
         frame.dispose();
     }
 
-    public static void createAddMethodWindow() {
+    public static JFrame createAddMethodWindow() {
         //initialize a new JFrame and the pane
         JFrame mfaWindow = new JFrame();
         Container pane = mfaWindow.getContentPane();
         
         //set strings
-        String message01 = "Please select the type of authentication method to add.";
-        String message02 = "Please enter the number as +1 1234567890";
+        String labelTypeOfAuth = "Please select the type of authentication method to add.";
+        String labelUsageExample = "Please enter the number as +1 1234567890";
+        String labelPhone = "Phone";
+        String labelEmail = "Email";
+        String labelOffice = "Office";
+        String labelMobile = "Mobile";
+        String labelAltMobile = "Alternate Mobile";
         String title = "Add Authentication Method";
+        String nameAddMfaUsageExample = "usageExample";
 
         //Configure the new window
         mfaWindow.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -927,7 +962,7 @@ public class MFAExtras {
                 // Get the source of the event
                 JRadioButtonMenuItem source = (JRadioButtonMenuItem) e.getSource();
                 // Check which radio button was selected
-                if (source.getName().equals("radioMobileButton")) {
+                if (source.getName().equals(nameAddMfaRadioMobileButton)) {
                     phoneTypeGroup.clearSelection();
                     source.setSelected(true);
 
@@ -936,17 +971,17 @@ public class MFAExtras {
                     for (Component comp : components) {
                         if (null == comp.getName()) {
                             continue; // Skip components without a name
-                        } else if (comp.getName().equals("radioMobilePhoneButton")) {
+                        } else if (comp.getName().equals(nameAddMfaRadioMobileButton)) {
                             comp.setVisible(true);
-                        } else if (comp.getName().equals("radioAltMobilePhoneButton")) {
+                        } else if (comp.getName().equals(nameAddMfaRadioAltMobileButton)) {
                             comp.setVisible(true);
-                        } else if (comp.getName().equals("radioOfficeButton")) {
+                        } else if (comp.getName().equals(nameAddMfaRadioOfficeButton)) {
                             comp.setVisible(true);
-                        } else if (comp.getName().equals("message02")) {
+                        } else if (comp.getName().equals(nameAddMfaUsageExample)) {
                             comp.setVisible(true);
                         }
                     }   
-                } else if (source.getName().equals("radioEmailButton")) {
+                } else if (source.getName().equals(nameAddMfaRadioEmailButton)) {
                     phoneTypeGroup.clearSelection();
                     source.setSelected(true);
 
@@ -954,13 +989,13 @@ public class MFAExtras {
                     for (Component comp : components) {
                         if (null == comp.getName()) {
                             continue; // Skip components without a name
-                        } else if (comp.getName().equals("radioMobilePhoneButton")) {
+                        } else if (comp.getName().equals(nameAddMfaRadioMobileButton)) {
                             comp.setVisible(false);
-                        } else if (comp.getName().equals("radioAltMobilePhoneButton")) {
+                        } else if (comp.getName().equals(nameAddMfaRadioAltMobileButton)) {
                             comp.setVisible(false);
-                        } else if (comp.getName().equals("radioOfficeButton")) {
+                        } else if (comp.getName().equals(nameAddMfaRadioOfficeButton)) {
                             comp.setVisible(false);
-                        } else if (comp.getName().equals("message02")) {
+                        } else if (comp.getName().equals(nameAddMfaUsageExample)) {
                             comp.setVisible(false);
                         }
                     } 
@@ -968,7 +1003,7 @@ public class MFAExtras {
             }
         };
         
-        label = new JLabel(message01);
+        label = new JLabel(labelTypeOfAuth);
         c.weightx = 0.0;
         c.gridwidth = 3;
         c.ipadx = 10;
@@ -978,8 +1013,8 @@ public class MFAExtras {
         pane.add(label, c);
 
         radioButton = new JRadioButtonMenuItem();
-        radioButton.setName("radioMobileButton");
-        radioButton.setText("Phone");
+        radioButton.setName(nameAddMfaRadioPhoneButton);
+        radioButton.setText(labelPhone);
         methodTypeGroup.add(radioButton);
         c.weightx = 0.0;
         c.gridwidth = 1;
@@ -991,8 +1026,8 @@ public class MFAExtras {
         pane.add(radioButton, c);
 
         radioButton = new JRadioButtonMenuItem();
-        radioButton.setName("radioEmailButton");
-        radioButton.setText("Email");
+        radioButton.setName(nameAddMfaRadioEmailButton);
+        radioButton.setText(labelEmail);
         methodTypeGroup.add(radioButton);
         c.weightx = 0.0;
         c.gridwidth = 1;
@@ -1003,8 +1038,8 @@ public class MFAExtras {
         pane.add(radioButton, c);
 
         radioButton = new JRadioButtonMenuItem();
-        radioButton.setName("radioMobilePhoneButton");
-        radioButton.setText("Mobile");
+        radioButton.setName(nameAddMfaRadioMobileButton);
+        radioButton.setText(labelMobile);
         radioButton.setVisible(false);
         phoneTypeGroup.add(radioButton);
         c.weightx = 0.0;
@@ -1015,8 +1050,8 @@ public class MFAExtras {
         pane.add(radioButton, c);
 
         radioButton = new JRadioButtonMenuItem();
-        radioButton.setName("radioAltMobilePhoneButton");
-        radioButton.setText("Alternate Mobile");
+        radioButton.setName(nameAddMfaRadioAltMobileButton);
+        radioButton.setText(labelAltMobile);
         radioButton.setVisible(false);
         phoneTypeGroup.add(radioButton);
         c.weightx = 0.0;
@@ -1027,8 +1062,8 @@ public class MFAExtras {
         pane.add(radioButton, c);
 
         radioButton = new JRadioButtonMenuItem();
-        radioButton.setName("radioOfficeButton");
-        radioButton.setText("Office");
+        radioButton.setName(nameAddMfaRadioOfficeButton);
+        radioButton.setText(labelOffice);
         radioButton.setVisible(false);
         phoneTypeGroup.add(radioButton);
         c.weightx = 0.0;
@@ -1038,8 +1073,8 @@ public class MFAExtras {
         c.gridy = 2;
         pane.add(radioButton, c);
 
-        label = new JLabel(message02);
-        label.setName("message02");
+        label = new JLabel(labelUsageExample);
+        label.setName(nameAddMfaUsageExample);
         label.setVisible(false);
         c.weightx = 0.0;
         c.gridwidth = 2;
@@ -1049,7 +1084,7 @@ public class MFAExtras {
         pane.add(label, c);
 
         TextField input = new TextField();
-        input.setName("inputText");
+        input.setName(nameAddMfaInputText);
         c.weightx = 0.0;
         c.gridwidth = 4;
         c.ipadx = 0;
@@ -1070,39 +1105,43 @@ public class MFAExtras {
         //mfaWindow.pack();
         mfaWindow.setVisible(true);
 
+        return mfaWindow;
+
     }
 
     public static void addMethodButton_Click(JFrame frame) {
         //get the components from the frame
         Component[] comps = frame.getContentPane().getComponents();
         String inputText = "";
-        String methodType = "";
-        String phoneType = "";
+        MethodType methodType = null;
+        PhoneType phoneType = null;
         EmailAuthenticationMethod emailMethod = new EmailAuthenticationMethod();
         EmailAuthenticationMethod emailResult = null;
         PhoneAuthenticationMethod phoneMethod = new PhoneAuthenticationMethod();
         PhoneAuthenticationMethod phoneResult = null;
+
+        String messageSuccessEmail = "Email method added successfully: ";
         
 
         // read the input and gather the selections made by the user
         for (Component comp : comps) {
             if (comp instanceof TextField textField) {
-                if (textField.getName().equals("inputText")) {
+                if (textField.getName().equals(nameAddMfaInputText)) {
                     inputText = textField.getText();
                 }
             } else if (comp instanceof JRadioButtonMenuItem radioButton) {
                 //first check if the radio button is selected
                 if (radioButton.isSelected()) {
-                    if (radioButton.getName().equals("radioMobilePhoneButton")) {
-                        phoneType = "Mobile";
-                    } else if (radioButton.getName().equals("radioAltMobilePhoneButton")) {
-                        phoneType = "Alternate Mobile";
-                    } else if (radioButton.getName().equals("radioOfficeButton")) {
-                        phoneType = "Office";
-                    } else if (radioButton.getName().equals("radioEmailButton")) {
-                        methodType = "Email";
-                    } else if (radioButton.getName().equals("radioMobileButton")) {
-                        methodType = "Phone";
+                    if (radioButton.getName().equals(nameAddMfaRadioMobileButton)) {
+                        phoneType = PhoneType.MOBILE;
+                    } else if (radioButton.getName().equals(nameAddMfaRadioAltMobileButton)) {
+                        phoneType = PhoneType.ALTMOBILE;
+                    } else if (radioButton.getName().equals(nameAddMfaRadioOfficeButton)) {
+                        phoneType = PhoneType.OFFICE;
+                    } else if (radioButton.getName().equals(nameAddMfaRadioEmailButton)) {
+                        methodType = MethodType.EMAIL;
+                    } else if (radioButton.getName().equals(nameAddMfaRadioMobileButton)) {
+                        methodType = MethodType.PHONE;
                     }
                 }
             }
@@ -1112,7 +1151,7 @@ public class MFAExtras {
 
         if (null == inputText || inputText.isEmpty()) {
             JOptionPane.showMessageDialog(frame, "Please enter valid contact information.", "Error", JOptionPane.ERROR_MESSAGE);
-        } else if (methodType.equals("Email") && null != inputText) {
+        } else if (methodType == MethodType.EMAIL && null != inputText) {
             //the user selected Email as the method type
             //get input from the user
             emailMethod.setEmailAddress(inputText);
@@ -1125,23 +1164,23 @@ public class MFAExtras {
                 JOptionPane.showMessageDialog(frame, "Error adding email method: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
             // if successful, show a message
-            if (null != emailMethod) {
-                App.outputArea.append("Email method added successfully: " + emailMethod.getEmailAddress() + "\n");
+            if (null != emailResult) {
+                App.outputArea.append(messageSuccessEmail + emailResult.getEmailAddress() + "\n");
             }
             //close the frame
             frame.dispose();
         //user selected Phone but did not select a phone type
-        } else if (methodType.equals("Phone") && phoneType.isEmpty()) {
+        } else if (methodType == MethodType.PHONE && null == phoneType) {
             JOptionPane.showMessageDialog(frame, "Please select a phone type.", "Error", JOptionPane.ERROR_MESSAGE);
         }
-        else if (methodType.equals("Phone") && !phoneType.isEmpty() && !inputText.isEmpty()) {
+        else if (methodType == MethodType.PHONE && null != phoneType && !inputText.isEmpty()) {
            
             phoneMethod.setPhoneNumber(inputText);
-            if (phoneType.equals("Mobile")) {
+            if (phoneType == PhoneType.MOBILE) {
                 phoneMethod.setPhoneType(AuthenticationPhoneType.Mobile);
-            } else if (phoneType.equals("Alternate Mobile")) {
+            } else if (phoneType == PhoneType.ALTMOBILE) {
                 phoneMethod.setPhoneType(AuthenticationPhoneType.AlternateMobile);
-            } else if (phoneType.equals("Office")) {
+            } else if (phoneType == PhoneType.OFFICE) {
                 phoneMethod.setPhoneType(AuthenticationPhoneType.Office);
             }
 
@@ -1806,12 +1845,11 @@ public class MFAExtras {
             frame = (JFrame)window;
         }
 
-        //update the cursor
-        pane.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-
         //JOptionPane.showMessageDialog(null,e.getSource());
 
         if(null != pane) {
+            //update the cursor
+            pane.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
             //check if activate later is checked.
             for(Component comp : pane.getComponents()) {
                 if (null != comp.getName() && comp.getName().equals(nameActivateLaterCheck)){

@@ -194,7 +194,7 @@ public class App {
         c.gridwidth = 1;
         c.gridx = 1;
         c.gridy = 2;
-        button.addActionListener(e -> addMethod_Click());
+        button.addActionListener(e -> addMethod_Click((JFrame) SwingUtilities.getWindowAncestor(pane)));
         pane.add(button, c);
 
         // add the reset/re-register MFA button
@@ -296,26 +296,32 @@ public class App {
     public static void removeComponentsFromPane(Container pane) {
         pane.removeAll();
         pane.repaint();
+        pane.revalidate();
     }
 
     // Method to create the Sign In button and add it to the frame/
     public static void createSignInButton(JFrame frame) {
+        String message = "Please Sign-In!";
         // Remove all components from the frame's content pane
         removeComponentsFromPane(frame.getContentPane());
 
         // Set layout manager
         frame.getContentPane().setLayout(new java.awt.FlowLayout());
         frame.setSize(200, 100);
+        // Display label
+        JLabel label = new JLabel(message);
+        frame.getContentPane().add(label);
+
         // Create a button
         JButton signInButton = new JButton("Sign In!");
         signInButton.setSize(20, 10);
-        //signInButton.setBackground(java.awt.Color.BLUE);
         signInButton.addActionListener(e -> signIn_click(frame));
         
         // Add button to the frame
         frame.getContentPane().add(signInButton);
 
         //redraw the pane
+        frame.getContentPane().repaint();
         frame.getContentPane().revalidate();
         
     }
@@ -325,11 +331,6 @@ public class App {
 
     public static void main(String[] args) {
 
-        //System.out.println("Hello, " + me.getDisplayName());
-        //System.out.println("Temporary Access Pass: " + result.getTemporaryAccessPass());
-        //System.out.println("Temporary Access Pass Start DateTime: " + result.getStartDateTime());
-        //System.out.println("Temporary Access Pass Lifetime in Minutes: " + result.getLifetimeInMinutes());
-        //System.out.println("The pass was created at: " + result.getCreatedDateTime());
 
         // Create the frame (window)
         JFrame frame = new JFrame("Simple Entra GUI App");
@@ -371,9 +372,6 @@ public class App {
 
         token = new InteractiveBrowserCredentialBuilder().clientId(clientId)
             .tenantId(tenantId).redirectUrl("http://localhost").build();
-
-        requestContext = new TokenRequestContext()
-            .addScopes("https://graph.microsoft.com/.default");
         
         if(null == graphClient)
             graphClient = new GraphServiceClient(token, scopes);
@@ -451,16 +449,13 @@ public class App {
 
         if (activeUser != null && outputArea != null) {
             String outputString = "User Details:\n" +
-                    "Display Name            : " + activeUser.getDisplayName() + "\n" +
-                    "User Principal Name     : " + activeUser.getUserPrincipalName() + "\n" +
-                    "ID                      : " + activeUser.getId() + "\n" +
-                    "Account Enabled         : " + activeUser.getAccountEnabled() + "\n" +
-                    "OnPremises Immutable ID : " + activeUser.getOnPremisesImmutableId() + "\n" +
-                    "Password Policies       : " + activeUser.getPasswordPolicies() + "\n" +
-                    "\n";
-                    
-            
-                    //"RefreshTokens Valid From : " + activeUser.getva() + "\n";
+                    "Display Name             : " + activeUser.getDisplayName() + "\n" +
+                    "User Principal Name      : " + activeUser.getUserPrincipalName() + "\n" +
+                    "ID                       : " + activeUser.getId() + "\n" +
+                    "Account Enabled          : " + activeUser.getAccountEnabled() + "\n" +
+                    "OnPremises Immutable ID  : " + activeUser.getOnPremisesImmutableId() + "\n" +
+                    "Password Policies        : " + activeUser.getPasswordPolicies() + "\n" +
+                    "RefreshTokens Valid From : " + activeUser.getRefreshTokensValidFromDateTime() + "\n";
 
             outputArea.append(outputString);
         }
@@ -483,9 +478,8 @@ public class App {
                 button.setText("Enable Account");
         }
 
-        
-
         frame.repaint();
+        frame.revalidate();
     }
 
     // Click on Get User Security Methods button
@@ -514,6 +508,7 @@ public class App {
             message += "\n\nPlease enter the new password, or \"System\" to let Entra     \n";
             message += "generate one for you.";
             String title = "Reset Password";
+            String system = "system";
 
             String passwordSystem = "The Entra generated password is : ";
             String passwordReset = "Password reset successfully!";
@@ -529,7 +524,7 @@ public class App {
                 frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
                 //check the input, if they didn't enter "system"
                 // then they entered the new password
-                if (!password.equalsIgnoreCase("system")) {
+                if (!password.equalsIgnoreCase(system)) {
                     requestBody.setNewPassword(password);
                     //JOptionPane.showMessageDialog(null, password.equalsIgnoreCase("system"));
                 }
@@ -538,8 +533,8 @@ public class App {
                     var result = graphClient.users().byUserId(activeUser.getId()).authentication().methods()
                         .byAuthenticationMethodId(MFAExtras.passwordId).resetPassword().post(requestBody);
                     //if Entra created the password, we need to display to the admin.
-                    if (password.equalsIgnoreCase("system"))
-                        JOptionPane.showMessageDialog(frame, passwordReset + "\n" 
+                    if (password.equalsIgnoreCase(system))
+                        JOptionPane.showMessageDialog(frame, passwordReset + System.lineSeparator() 
                             + passwordSystem + result.getNewPassword());
                     else 
                         JOptionPane.showMessageDialog(frame, passwordReset);     
@@ -568,6 +563,7 @@ public class App {
             String message = "The current ImmutableID for " + activeUser.getDisplayName() + " is: " + activeUser.getOnPremisesImmutableId();
             message += "\nPlease enter the new ImmutableId below or \"Clear\" to clear it.";
             String title = "Update ImmutableId";
+            String exceptionMessage = "Error updating ImmutableId.\n";
             User localUser = new User();
             //get the update from the admin
             String immutableId = JOptionPane.showInputDialog(null, message, title, JOptionPane.QUESTION_MESSAGE).trim();
@@ -586,11 +582,7 @@ public class App {
                     activeUser = graphClient.users().byUserId(activeUser.getId()).patch(localUser);
                 }
                 catch (ODataError ex) {
-                    JOptionPane.showMessageDialog(null, "Error updating ImmutableId.\n" + ex.getMessage());
-                    //JOptionPane.showMessageDialog(null, "Cause: \n" + ex.getCause().getMessage());
-                    JOptionPane.showMessageDialog(null, "Response Status Code: \n" + ex.getResponseStatusCode());
-                    JOptionPane.showMessageDialog(null, "Localized Message: \n" + ex.getLocalizedMessage());
-                    JOptionPane.showMessageDialog(null, "Suppressed: \n" + ex.getSuppressed());
+                    JOptionPane.showMessageDialog(null, exceptionMessage + ex.getMessage());
                 }
             }
             //set the cursor back to default
@@ -654,7 +646,7 @@ public class App {
     }
 
     //add a security method.
-    public static void addMethod_Click() {
+    public static void addMethod_Click(JFrame frame) {
         //check if the active user is null
         if (activeUser == null) {
             JOptionPane.showMessageDialog(null, noActiveUser);
@@ -662,7 +654,8 @@ public class App {
         // it is not, we can continue
         else {
             //create the window
-            MFAExtras.createAddMethodWindow();
+            JFrame mfaWindow = MFAExtras.createAddMethodWindow();
+            setFrameFocus(frame, mfaWindow);
         }
     }
     
@@ -849,6 +842,7 @@ public class App {
             Boolean successful = false;
             String message = "Please enter the method ID you wish to remove";
             String title = "Remove Authenticaiton Method";
+            String errorMessage = "Error deleting method. Please try again.";
 
             String methodId = JOptionPane.showInputDialog(null, message, title, JOptionPane.QUESTION_MESSAGE).trim();
 
@@ -865,7 +859,7 @@ public class App {
                     //outputArea.scrollRectToVisible(outputArea.getVisibleRect());
                 }
                 else {
-                    JOptionPane.showMessageDialog(frame, "Error deleting method. Please try again.");
+                    JOptionPane.showMessageDialog(frame, errorMessage);
                 }
             }
 
@@ -934,8 +928,14 @@ public class App {
             frame.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
         }
     }
+
     //revoke sign-in sessions
     public static void revokeSignInSessions_click(JFrame frame) {
+        String confirmMessage = "Are you sure you want to revoke sign-in sessions for "
+            + activeUser.getDisplayName() + "?";
+        String titleRevoke = "Revoke Sign-in Sessions";
+        String successMessage = "Sign-in sessions revoked successfully.\n" +
+                        "Please note that this will not sign out the user from any active sessions.\n";
         //check if the active user is null
         if (null == activeUser) {
             JOptionPane.showMessageDialog(frame, noActiveUser);
@@ -943,8 +943,7 @@ public class App {
         // it is not, we can continue
         else {
             //get the confirmation from the user
-            int response = JOptionPane.showConfirmDialog(frame, "Are you sure you want to revoke sign-in sessions for "
-                + activeUser.getDisplayName() + "?", "Revoke Sign-in Sessions", JOptionPane.YES_NO_OPTION);
+            int response = JOptionPane.showConfirmDialog(frame, confirmMessage, titleRevoke, JOptionPane.YES_NO_OPTION);
             
             if (response == JOptionPane.YES_OPTION) {
                 frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
@@ -952,8 +951,7 @@ public class App {
                     var reply = graphClient.users().byUserId(activeUser.getId()).revokeSignInSessions().post();
 
                     if (null != reply && reply.getValue()){
-                        JOptionPane.showMessageDialog(frame, "Sign-in sessions revoked successfully.\n" +
-                        "Please note that this will not sign out the user from any active sessions.\n");
+                        JOptionPane.showMessageDialog(frame, successMessage);
                     } else {
                         JOptionPane.showMessageDialog(frame, "Error revoking sign-in sessions. Please try again.");
                     }
@@ -1020,7 +1018,8 @@ public class App {
                 tapData.maxLifetimeInMins = tapPolicy.getMaximumLifetimeInMinutes();
                 tapData.isUsableOnce = tapPolicy.getIsUsableOnce();
 
-                MFAExtras.createTAPWindow(tapData);
+                JFrame tapWindow = MFAExtras.createTAPWindow(tapData);
+                setFrameFocus(frame, tapWindow);
             }
         }
     }
@@ -1094,15 +1093,9 @@ public class App {
                     qrCodeFrame.setLocation(frame.getLocationOnScreen());
                     qrCodeFrame.setLayout(new GridLayout(1,1));
                     qrCodeFrame.setTitle(windowTitle);
-                    qrCodeFrame.addWindowListener(new java.awt.event.WindowAdapter() {
-                        @Override
-                        public void windowClosing(java.awt.event.WindowEvent windowEvent) {
-                            frame.setEnabled(true);
-                        }
-                    });
+                    
+                    setFrameFocus(frame,qrCodeFrame);
                     MFAExtras.fillQrCodeWindow(qrCodeFrame);
-
-                    frame.setEnabled(false);
                     qrCodeFrame.setVisible(true);
                 }
                 else
@@ -1119,5 +1112,16 @@ public class App {
             sb.append(String.format("%02X", b));
         }
         return sb.toString();
+    }
+
+    private static void setFrameFocus(JFrame primary, JFrame secondary) {
+        secondary.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent windowEvent) {
+                primary.setEnabled(true);
+            }
+        });
+        
+        primary.setEnabled(false);
     }
 }
