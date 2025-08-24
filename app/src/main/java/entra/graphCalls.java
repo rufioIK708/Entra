@@ -37,6 +37,9 @@ public class graphCalls {
     private static void getAccessToken() {
         if(null == App.accessToken || OffsetDateTime.now().isAfter(App.accessToken.getExpiresAt())
             || OffsetDateTime.now().isAfter(App.accessToken.getRefreshAt())) {
+            if(null == App.requestContext)
+                App.requestContext = new TokenRequestContext().addScopes(App.scopes).setTenantId(App.tenantId);
+            
             App.accessToken = App.token.getTokenSync(App.requestContext);
         }
     }

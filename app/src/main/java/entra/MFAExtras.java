@@ -1335,21 +1335,9 @@ public class MFAExtras {
     }
 
     public static void resetQRCodePin(Container pane, Integer pinLength) {
-        String message = "Please enter a PIN below\n" +
-            "It must be " + pinLength + " digits long.\n" +
-            "You may also enter \'System\' to generate one.";
-        String system = "System";
-        //JOptionPane.showMessageDialog(null, message);
-
-
+        
         QrPin update = new QrPin();
-        String pinInput = JOptionPane.showInputDialog(null, message);
-
-        if(null != pinInput) {
-            if(pinInput.equals(system))
-                pinInput = "";
-        }
-        update.setCode(pinInput);
+        
         update.setOdataType("#microsoft.graph.qrPin");
 
         QrPin result = null;
@@ -1598,7 +1586,7 @@ public class MFAExtras {
 
                 NumberFormat format = NumberFormat.getIntegerInstance();
                 format.setGroupingUsed(false);
-                format.setMinimumIntegerDigits(pinLength);
+                //format.setMinimumIntegerDigits(pinLength);
                 NumberFormatter numberFormatter = new NumberFormatter(format);
                 numberFormatter.setValueClass(Long.class);
                 numberFormatter.setAllowsInvalid(false);
