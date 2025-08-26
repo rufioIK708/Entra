@@ -146,6 +146,7 @@ public class MFAExtras {
         static final String nameAddMfaRadioOfficeButton = "radioOfficeButton";
         static final String nameAddMfaRadioEmailButton = "radioEmailButton";
         static final String nameActivateLaterCheck = "ActivateLaterCheck";
+        static final String nameAddMfaUsageExample = "usageExample";
         static final String StdCodePane = "Standard QR Code";
         static final String TmpCodePane = "Temporary QR Code";
         static final String PinCodePane = "PIN Details";
@@ -225,7 +226,7 @@ public class MFAExtras {
         String groupId = "None";
 
         for (ExcludeTarget group : targets) {
-            JOptionPane.showMessageDialog(null, "Checking : " + group.getId());
+            
             if (isMemberOfGroup(group.getId())) {
                 
                 groupId = group.getId();
@@ -924,46 +925,17 @@ public class MFAExtras {
         frame.dispose();
     }
 
-    public static JFrame createAddMethodWindow() {
-        //initialize a new JFrame and the pane
-        JFrame mfaWindow = new JFrame();
-        Container pane = mfaWindow.getContentPane();
-        
-        //set strings
-        String labelTypeOfAuth = "Please select the type of authentication method to add.";
-        String labelUsageExample = "Please enter the number as +1 1234567890";
-        String labelPhone = "Phone";
-        String labelEmail = "Email";
-        String labelOffice = "Office";
-        String labelMobile = "Mobile";
-        String labelAltMobile = "Alternate Mobile";
-        String title = "Add Authentication Method";
-        String nameAddMfaUsageExample = "usageExample";
-
-        //Configure the new window
-        mfaWindow.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        mfaWindow.setSize(600,250);
-        mfaWindow.setLayout(new GridBagLayout());
-        mfaWindow.setTitle(title);
-        GridBagConstraints c = new GridBagConstraints();
-        c.fill = GridBagConstraints.HORIZONTAL;
-
-        //create variables for the needed components
-        JButton button;
-        JRadioButtonMenuItem radioButton;
-        JLabel label;
-        ButtonGroup methodTypeGroup = new ButtonGroup();
-        ButtonGroup phoneTypeGroup = new ButtonGroup();
-        //JTextComponent text;
-
-        ActionListener listener = new ActionListener() {
+    static ActionListener listener = new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+               
                 // Get the source of the event
                 JRadioButtonMenuItem source = (JRadioButtonMenuItem) e.getSource();
+                JPanel pane = (JPanel) source.getParent();
                 // Check which radio button was selected
-                if (source.getName().equals(nameAddMfaRadioMobileButton)) {
-                    phoneTypeGroup.clearSelection();
+                if (source.getName().equals(nameAddMfaRadioPhoneButton)) {
+                    //it was the phone button
+                    //phoneTypeGroup.clearSelection();
                     source.setSelected(true);
 
                     // Show the phone type options
@@ -982,7 +954,8 @@ public class MFAExtras {
                         }
                     }   
                 } else if (source.getName().equals(nameAddMfaRadioEmailButton)) {
-                    phoneTypeGroup.clearSelection();
+                    //it was the email button
+                    //phoneTypeGroup.clearSelection();
                     source.setSelected(true);
 
                     Component[] components = pane.getComponents();
@@ -1002,6 +975,40 @@ public class MFAExtras {
                 }
             }
         };
+
+    public static JFrame createAddMethodWindow() {
+        //initialize a new JFrame and the pane
+        JFrame mfaWindow = new JFrame();
+        Container pane = mfaWindow.getContentPane();
+        
+        //set strings
+        String labelTypeOfAuth = "Please select the type of authentication method to add.";
+        String labelUsageExample = "Please enter the number as +1 1234567890";
+        String labelPhone = "Phone";
+        String labelEmail = "Email";
+        String labelOffice = "Office";
+        String labelMobile = "Mobile";
+        String labelAltMobile = "Alternate Mobile";
+        String title = "Add Authentication Method";
+        
+
+        //Configure the new window
+        mfaWindow.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        mfaWindow.setSize(600,250);
+        mfaWindow.setLayout(new GridBagLayout());
+        mfaWindow.setTitle(title);
+        GridBagConstraints c = new GridBagConstraints();
+        c.fill = GridBagConstraints.HORIZONTAL;
+
+        //create variables for the needed components
+        JButton button;
+        JRadioButtonMenuItem radioButton;
+        JLabel label;
+        ButtonGroup methodTypeGroup = new ButtonGroup();
+        ButtonGroup phoneTypeGroup = new ButtonGroup();
+        //JTextComponent text;
+
+        
         
         label = new JLabel(labelTypeOfAuth);
         c.weightx = 0.0;

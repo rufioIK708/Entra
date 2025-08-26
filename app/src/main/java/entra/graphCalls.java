@@ -23,6 +23,7 @@ import java.net.URI;
 
 import com.microsoft.graph.beta.models.Fido2AuthenticationMethod;
 import com.microsoft.graph.beta.models.QrCodePinAuthenticationMethod;
+import com.microsoft.graph.beta.models.TemporaryAccessPassAuthenticationMethod;
 import com.microsoft.graph.beta.models.WebauthnCredentialCreationOptions;
 
 //import com.azure.core.credential.AccessToken;
@@ -32,6 +33,7 @@ public class graphCalls {
 
     private final static String GRAPH_FIDO2_CREATEOPTS_TEMPLATE = "/users/%S/authentication/fido2methods/creationOptions(challengeTimeoutInMinutes={5})";
     private final static String GRAPH_QRCODE_ENDPOINT_TEMPLATE = "/users/%S/authentication/qrCodePinMethod";
+    private final static String GRAPH_TAP_ENDPOINT_TEMPLATE = "/users/%S/authentication/methods/temporaryAccessPassMethods";
     private final static String baseaddress = "https://graph.microsoft.com/beta";
 
     private static void getAccessToken() {
@@ -144,6 +146,17 @@ public class graphCalls {
         }
 
         return credOpts;
+    }
+
+    public static TemporaryAccessPassAuthenticationMethod createTapMethod (TemporaryAccessPassAuthenticationMethod newTap) {
+        TemporaryAccessPassAuthenticationMethod newTapMethod = null;
+        
+        String userId = App.activeUser.getId();
+        String endpoint = String.format(GRAPH_TAP_ENDPOINT_TEMPLATE, userId);
+
+        
+        return newTapMethod;
+
     }
     
 }

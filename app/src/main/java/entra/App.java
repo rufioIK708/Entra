@@ -342,6 +342,24 @@ public class App {
         
     }
 
+    public static void printUserDetails(User user, Boolean isAdmin) {
+        String output = "";
+        
+        if(isAdmin)
+            output += "Admin Details : \n";
+        else
+        output += "User Details : \n";
+        
+        output += "Display Name             : " + user.getDisplayName() + "\n" +
+                    "User Principal Name      : " + user.getUserPrincipalName() + "\n" +
+                    "ID                       : " + user.getId() + "\n" +
+                    "Account Enabled          : " + user.getAccountEnabled() + "\n" +
+                    "OnPremises Immutable ID  : " + user.getOnPremisesImmutableId() + "\n" +
+                    "Password Policies        : " + user.getPasswordPolicies() + "\n" +
+                    "RefreshTokens Valid From : " + user.getRefreshTokensValidFromDateTime() + "\n";
+
+        outputArea.append(output);
+    }
     // Click on Sign Out button
     // This will reset the state of the app and remove the sign in button
     // and add the sign in button back to the frame.
@@ -396,15 +414,7 @@ public class App {
             
             addComponentsToPane(frame.getContentPane());   
 
-            String outputString = "Admin details : \n" +
-                    "Display Name            : " + admin.getDisplayName() + "\n" +
-                    "User Principal Name     : " + admin.getUserPrincipalName() + "\n" +
-                    "ID                      : " + admin.getId() + "\n" +
-                    "Account Enabled         : " + admin.getAccountEnabled() + "\n" +
-                    "OnPremises Immutable ID : " + admin.getOnPremisesImmutableId() + "\n" +
-                    "Password Policies       : " + admin.getPasswordPolicies() + "\n" + "\n";
-
-            outputArea.append(outputString);
+            printUserDetails(admin, true);
 
             frame.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
         }
@@ -448,16 +458,7 @@ public class App {
         }
 
         if (activeUser != null && outputArea != null) {
-            String outputString = "User Details:\n" +
-                    "Display Name             : " + activeUser.getDisplayName() + "\n" +
-                    "User Principal Name      : " + activeUser.getUserPrincipalName() + "\n" +
-                    "ID                       : " + activeUser.getId() + "\n" +
-                    "Account Enabled          : " + activeUser.getAccountEnabled() + "\n" +
-                    "OnPremises Immutable ID  : " + activeUser.getOnPremisesImmutableId() + "\n" +
-                    "Password Policies        : " + activeUser.getPasswordPolicies() + "\n" +
-                    "RefreshTokens Valid From : " + activeUser.getRefreshTokensValidFromDateTime() + "\n";
-
-            outputArea.append(outputString);
+            printUserDetails(activeUser, false);
         }
         
         JButton button = null;
@@ -515,13 +516,17 @@ public class App {
             String passwordCatch = "Error resetting password.";
 
             //get the input from the user
-            String password = JOptionPane.showInputDialog(null,message,title,JOptionPane.QUESTION_MESSAGE).trim();
+            String password = JOptionPane.showInputDialog(null,message,title,JOptionPane.QUESTION_MESSAGE);
             var requestBody = new ResetPasswordPostRequestBody();
 
             
             if (null != password && !password.isEmpty()) {
+                
                 //change the cursor, we might be a while
                 frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+                
+                password = password.trim();
+                
                 //check the input, if they didn't enter "system"
                 // then they entered the new password
                 if (!password.equalsIgnoreCase(system)) {
@@ -596,10 +601,10 @@ public class App {
         String disableButton = "Disable Account";
         String errorMessage = "Error updating user. Please try again.\n" +
             "You may need to get the user again.";
-        
+        String successMessage = "Account updated successfully for : " + activeUser.getDisplayName();
         
         //check if the active user is null
-        if (activeUser == null) {
+        if (null == activeUser) {
             JOptionPane.showMessageDialog(null, noActiveUser);
         }
         // it is not, we can continue
@@ -642,6 +647,10 @@ public class App {
 
             //update the cursor
             frame.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+
+            JOptionPane.showMessageDialog(null, successMessage);
+
+            printUserDetails(activeUser, false);
         }
     }
 
