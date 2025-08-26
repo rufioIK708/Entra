@@ -569,29 +569,34 @@ public class App {
             message += "\nPlease enter the new ImmutableId below or \"Clear\" to clear it.";
             String title = "Update ImmutableId";
             String exceptionMessage = "Error updating ImmutableId.\n";
+            String succsessMessage = "ImmutableId updated successfully for : " + activeUser.getDisplayName();
+
             User localUser = new User();
             //get the update from the admin
-            String immutableId = JOptionPane.showInputDialog(null, message, title, JOptionPane.QUESTION_MESSAGE).trim();
+            String immutableId = JOptionPane.showInputDialog(null, message, title, JOptionPane.QUESTION_MESSAGE);
 
-            frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+            if(null != immutableId && !immutableId.isEmpty()) {
+                frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
-            if (null != immutableId && !immutableId.isEmpty()) {
-                //update the immutableId on the stored user
-                if (immutableId.equalsIgnoreCase("clear"))
-                    localUser.setOnPremisesImmutableId(null);
-                else
-                    localUser.setOnPremisesImmutableId(immutableId);
-                
-                try {
-                    //update user
-                    activeUser = graphClient.users().byUserId(activeUser.getId()).patch(localUser);
+                if (null != immutableId && !immutableId.isEmpty()) {
+                    //update the immutableId on the stored user
+                    if (immutableId.equalsIgnoreCase("clear"))
+                        localUser.setOnPremisesImmutableId(null);
+                    else
+                        localUser.setOnPremisesImmutableId(immutableId);
+                    
+                    try {
+                        //update user
+                        activeUser = graphClient.users().byUserId(activeUser.getId()).patch(localUser);
+                        JOptionPane.showMessageDialog(null, succsessMessage, title, JOptionPane.INFORMATION_MESSAGE);
+                    }
+                    catch (ODataError ex) {
+                        JOptionPane.showMessageDialog(null, exceptionMessage + ex.getMessage());
+                    }
                 }
-                catch (ODataError ex) {
-                    JOptionPane.showMessageDialog(null, exceptionMessage + ex.getMessage());
-                }
-            }
-            //set the cursor back to default
-            frame.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+                //set the cursor back to default
+                frame.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+            }            
         }
     }
 
@@ -853,11 +858,13 @@ public class App {
             String title = "Remove Authenticaiton Method";
             String errorMessage = "Error deleting method. Please try again.";
 
-            String methodId = JOptionPane.showInputDialog(null, message, title, JOptionPane.QUESTION_MESSAGE).trim();
+            String methodId = JOptionPane.showInputDialog(null, message, title, JOptionPane.QUESTION_MESSAGE);
 
             frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
             if (null != methodId && !methodId.isEmpty()){
+                methodId = methodId.trim();
+
                 String messageSuccess = MFAExtras.getMethodName(MFAExtras.getAuthenticationMethod(methodId))
                          + " method has been deleted. \n";
                 
