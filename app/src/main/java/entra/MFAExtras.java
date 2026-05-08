@@ -732,7 +732,7 @@ public class MFAExtras {
     // Create the TAP window
     public static JFrame createTAPWindow(tapData tapData) {
         //initialize a new JFrame and the pane
-        JFrame tapWindow = new JFrame();
+        JFrame tapWindow = new JFrame("Create Temporary Access Pass");
         Container pane = tapWindow.getContentPane();
         
         //set strings
@@ -917,7 +917,15 @@ public class MFAExtras {
                 "Temporary Access Pass Start DateTime: " + result.getStartDateTime() + "\n" +
                 "Temporary Access Pass Lifetime in Minutes: " + result.getLifetimeInMinutes() + "\n";
 
-            JOptionPane.showMessageDialog(frame, message, "TAP Created", JOptionPane.INFORMATION_MESSAGE);
+            //Saving working option as backup
+            //JOptionPane.showMessageDialog(frame, message, "TAP Created", JOptionPane.INFORMATION_MESSAGE);
+
+            JFrame displayFrame = new JFrame("New TAP Details");
+            displayFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // Set the exit method
+            JLabel messageLabel = new JLabel(message);  //text added to label
+            displayFrame.getContentPane().add(messageLabel); //add label to frame
+
+
         } else 
             JOptionPane.showMessageDialog(frame, "Unable to read result.");
 
@@ -1961,14 +1969,16 @@ public class MFAExtras {
                 drawDetailsCodePane(pane, false, newCode);
                 pane.repaint();
                 pane.revalidate();
+
+                //all done, fix the cursor
+                pane.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
             }
             // we are only ever going to pass either tmpCodePane or stdCodePane, this shouldn't be reachable.
             else
                 JOptionPane.showMessageDialog(null, "Error updating window.");   
         }
 
-        //all done, fix the cursor
-        pane.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+        
     }
 
     private static void deleteCode_Click(Container pane, Boolean isStandard) {

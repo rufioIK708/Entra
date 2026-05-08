@@ -14,13 +14,14 @@ import com.microsoft.graph.beta.models.odataerrors.*;
 
 //import java.sql.Date;
 import javax.swing.*;
-import java.time.Duration;
+import java.net.URI;
 
 //import org.checkerframework.checker.units.qual.C;
 
 import javax.smartcardio.*;
 
 import java.awt.*;
+import java.io.IOException;
 import java.security.AuthProvider;
 //import java.time.OffsetDateTime;
 //import java.time.ZonedDateTime;
@@ -436,51 +437,53 @@ public class App {
         String title = "Get User";
         String messageSuccess = "User found: ";
 
-        String userPrincipalName = JOptionPane.showInputDialog(frame, message, title, JOptionPane.QUESTION_MESSAGE).trim();
+        String userPrincipalName = JOptionPane.showInputDialog(frame, message, title, JOptionPane.QUESTION_MESSAGE);
 
         if (userPrincipalName != null && !userPrincipalName.isEmpty()) {
             frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
             try {
-                User user = graphClient.usersWithUserPrincipalName(userPrincipalName).get();
+                User user = graphClient.usersWithUserPrincipalName(userPrincipalName.trim()).get();
                 activeUser = user;
                 JOptionPane.showMessageDialog(frame, messageSuccess + user.getDisplayName());
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(frame, "Error getting user: " + ex.getMessage());
                 activeUser = null;
             }
-            frame.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-        } else if(userPrincipalName == null || userPrincipalName.isEmpty()) {
-            return;
-        }
 
-        if (activeUser != null && userInfoArea != null) {
+            JButton button = null;
+
+            //get the button
+            for (Component comp : frame.getContentPane().getComponents()) {
+                if (comp instanceof JButton) {
+                    if (((JButton)comp).getText().contains("Account"))
+                        button = ((JButton)comp);
+                }
+            }
+
+            //update the button.
+            if (null != button){
+                if (activeUser != null && activeUser.getAccountEnabled())
+                    button.setText("Disable Account");
+                else if (activeUser != null && activeUser.getAccountEnabled())
+                    button.setText("Enable Account");
+            }
+
+            frame.repaint();
+            frame.revalidate();
+
+            if (activeUser != null && userInfoArea != null) {
             userInfoArea.setText("The selected user is: " + activeUser.getDisplayName());
         }
 
         if (activeUser != null && outputArea != null) {
             printUserDetails(activeUser, false);
         }
+            frame.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+        } else if(userPrincipalName == null || userPrincipalName.isEmpty()) {
+            return;
+        }
+
         
-        JButton button = null;
-
-        //get the button
-        for (Component comp : frame.getContentPane().getComponents()) {
-            if (comp instanceof JButton) {
-                if (((JButton)comp).getText().contains("Account"))
-                    button = ((JButton)comp);
-            }
-        }
-
-        //update the button.
-        if (null != button){
-            if (activeUser != null && activeUser.getAccountEnabled())
-                button.setText("Disable Account");
-            else if (activeUser != null && activeUser.getAccountEnabled())
-                button.setText("Enable Account");
-        }
-
-        frame.repaint();
-        frame.revalidate();
     }
 
     // Click on Get User Security Methods button
@@ -902,18 +905,29 @@ public class App {
             WebauthnCredentialCreationOptions fido2Config = null;
             
             //CreationOptionsWithChallengeTimeoutInMinutesRequestBuilder fido2Config = null;
-            try {
+
+            //this is the built-in graph sdk call, but it doesn't work yet
+            /*try {
                 fido2Config = graphClient.users().byUserId(activeUser.getId()).authentication()
                     .fido2Methods().creationOptionsWithChallengeTimeoutInMinutes()
                     .get(requestConfiguration -> {
                         requestConfiguration.queryParameters.challengeTimeoutInMinutes = timeout;
                     });
-                //fido2Config = graphClient.users().byUserId(activeUser
             }
             catch (ODataError ex) {
                 outputArea.append("Error getting Fido2 Passkey registration configuration.\n" + ex.getMessage());;
-            }
+            }*/
 
+            try {
+                fido2Config = graphCalls.getFido2CreationOptions(timeout);
+            }
+            catch (IOException ex) {
+                JOptionPane.showMessageDialog(null, "Error getting Fido2 Passkey reg config\n" + ex.getMessage());
+            }
+            catch (InterruptedException ex) {
+                JOptionPane.showMessageDialog(null, "Error getting Fido2 Passkey reg config\n" + ex.getMessage());
+            }
+            
             if (null != fido2Config) {
                 //create the window to provision the passkey
                 outputArea.append("Fido2 Passkey registration configuration found.\n");

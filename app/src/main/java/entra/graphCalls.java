@@ -1,14 +1,17 @@
 package entra;
 
 import com.azure.core.credential.TokenRequestContext;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 //JOptionPane to display errors
 //import javax.swing.JOptionPane;
 
 //jackson desrialization
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 //HTTP request libraies
@@ -31,9 +34,9 @@ import com.microsoft.graph.beta.models.WebauthnCredentialCreationOptions;
 
 public class graphCalls {
 
-    private final static String GRAPH_FIDO2_CREATEOPTS_TEMPLATE = "/users/%S/authentication/fido2methods/creationOptions(challengeTimeoutInMinutes={5})";
-    private final static String GRAPH_QRCODE_ENDPOINT_TEMPLATE = "/users/%S/authentication/qrCodePinMethod";
-    private final static String GRAPH_TAP_ENDPOINT_TEMPLATE = "/users/%S/authentication/methods/temporaryAccessPassMethods";
+    private final static String GRAPH_FIDO2_CREATEOPTS_TEMPLATE = "/users/%s/authentication/fido2methods/creationOptions(challengeTimeoutInMinutes=%s)";
+    private final static String GRAPH_QRCODE_ENDPOINT_TEMPLATE = "/users/%s/authentication/qrCodePinMethod";
+    private final static String GRAPH_TAP_ENDPOINT_TEMPLATE = "/users/%s/authentication/methods/temporaryAccessPassMethods";
     private final static String baseaddress = "https://graph.microsoft.com/beta";
 
     private static void getAccessToken() {
@@ -82,10 +85,14 @@ public class graphCalls {
         if(null != response) {
             if(200 <= response.statusCode() && 300 > response.statusCode()) {
                 //System.out.println(response.body());
-                ObjectMapper mapper = new ObjectMapper();
+                ObjectMapper mapper = JsonMapper.builder()
+                    .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES)
+                    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                    .build();
+                /*ObjectMapper mapper = new ObjectMapper();
                 mapper.registerModule(new JavaTimeModule());
                 mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-                mapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS, true);
+                mapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS, true);*/
 
                 try {
                     newMethod = mapper.readValue(response.body(), QrCodePinAuthenticationMethod.class);
@@ -101,9 +108,9 @@ public class graphCalls {
         return newMethod;
     }
 
-    public static WebauthnCredentialCreationOptions getFido2CreationOptions() throws IOException, InterruptedException {
+    public static WebauthnCredentialCreationOptions getFido2CreationOptions(int timeout) throws IOException, InterruptedException {
         WebauthnCredentialCreationOptions credOpts = null;
-        String endpoint = String.format(GRAPH_FIDO2_CREATEOPTS_TEMPLATE, App.activeUser.getId());
+        String endpoint = String.format(GRAPH_FIDO2_CREATEOPTS_TEMPLATE, App.activeUser.getId(), timeout);
 
         getAccessToken();
         
@@ -126,19 +133,28 @@ public class graphCalls {
         }
 
         if(null != response) {
-            System.out.println(response.body());
+            
             if(200 <= response.statusCode() && 300 > response.statusCode()) {
                 //System.out.println(response.body());
-                ObjectMapper mapper = new ObjectMapper();
+
+                ObjectMapper mapper = JsonMapper.builder()
+                    .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES)
+                    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                    .build();
+
+                /*ObjectMapper mapper = new ObjectMapper();
                 mapper.registerModule(new JavaTimeModule());
                 mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-                mapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS, true);
+                mapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS, true);*/
 
                 try {
                     credOpts = mapper.readValue(response.body(), WebauthnCredentialCreationOptions.class);
-                } catch (IOException e) {
+                } catch (JsonMappingException e) {
+                    throw e;
+                } catch (JsonProcessingException e) {
                     throw e;
                 }
+
             }
         }
         else {
